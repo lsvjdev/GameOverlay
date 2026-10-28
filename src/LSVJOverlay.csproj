@@ -9,6 +9,10 @@
     <AssemblyName>LSVJOverlay</AssemblyName>
     <RootNamespace>LSVJOverlay</RootNamespace>
     <Version>0.1.0</Version>
+    <Authors>LSVJ-Coding</Authors>
+    <Copyright>Copyright © 2026 LSVJ-Coding</Copyright>
+    <PackageLicenseExpression>GPL-3.0-only</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/LSVJ-Coding/GameOverlay</RepositoryUrl>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="LibreHardwareMonitorLib" Version="0.9.6" />
