@@ -1,14 +1,14 @@
-# LSVJ Overlay
+# Game Overlay
 
-LSVJ Overlay is a small Windows performance overlay that uses RivaTuner Statistics Server (RTSS) to display system stats in games.
+Game Overlay is a small Windows performance overlay that uses RivaTuner Statistics Server (RTSS) to display system stats in games.
 
 The goal is a clean, compact overlay without a separate game booster or a large background app.
 
 ## Current status
 
-**Early prototype.** The project has not yet been tested in a Windows game. Some features may not work as expected, and RTSS support depends on the game. There is no official installer or stable release yet.
+**Early prototype.** The app has been built and launched on Windows, but the in-game RTSS integration still needs testing. Some features may not work as expected, and RTSS support depends on the game. There is no official installer or stable release yet.
 
-The overlay is designed to show FPS, time, playtime, CPU and GPU readings, and RAM usage. It also has a desktop preview and a `Ctrl + Shift + O` hotkey.
+The overlay is designed to show FPS, time (12-hour or 24-hour), playtime, CPU and GPU readings, and RAM usage. The desktop preview can be positioned at the top left, center, or right. It also has a desktop preview and a `Ctrl + Shift + O` hotkey.
 
 ## Requirements
 
@@ -37,4 +37,4 @@ Copyright (c) 2026 LSVJ-Coding.
 
 The original project code is licensed under [GPL-3.0-only](LICENSE). External libraries retain their own licenses. See [third-party notices](THIRD-PARTY-NOTICES.md) for details.
 
-LSVJ Overlay is an independent project and is not affiliated with Razer, MSI, or the developers of RTSS.
+Game Overlay is an independent project and is not affiliated with Razer, MSI, or the developers of RTSS.
