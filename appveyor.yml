@@ -1,16 +1,12 @@
-# Uses AppVeyor Windows CI, NOT GitHub Actions.
-# AppVeyor's free open-source plan requires a public open-source project.
 version: 0.1.{build}
 image: Visual Studio 2022
 configuration: Release
 platform: x64
 
 build_script:
-  - cmd: dotnet --version
   - cmd: dotnet publish src\LSVJOverlay.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o publish
 
 after_build:
-  # Ship the project's license and existing third-party notices with the app.
   - ps: Copy-Item LICENSE publish\LICENSE -Force
   - ps: Copy-Item THIRD-PARTY-NOTICES.md publish\THIRD-PARTY-NOTICES.md -Force
   - ps: Copy-Item LICENSES publish\LICENSES -Recurse -Force
@@ -21,6 +17,3 @@ test: off
 artifacts:
   - path: LSVJOverlay-win-x64.zip
     name: LSVJOverlay-win-x64
-
-# Before a publicly distributed release, review the actual NuGet/runtime
-# closure and include any version-specific .NET runtime binary legal notices.
