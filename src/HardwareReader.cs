@@ -14,6 +14,7 @@ internal sealed class HardwareReader : IDisposable
     private bool _attemptedInit;
 
     public string LastGpuSensorInfo { get; private set; } = "No GPU sensor readings available yet.";
+    public string LastCpuSensorInfo { get; private set; } = "No CPU sensor readings available yet.";
 
     public HardwareSample Read()
     {
@@ -29,8 +30,9 @@ internal sealed class HardwareReader : IDisposable
                 _computer = new Computer { IsCpuEnabled = true, IsGpuEnabled = true };
                 _computer.Open();
             }
-            catch
+            catch (Exception ex)
             {
+                LastCpuSensorInfo = "Hardware monitoring could not start: " + ex.Message;
                 try { _computer?.Close(); } catch { }
                 _computer = null;
             }
@@ -43,13 +45,26 @@ internal sealed class HardwareReader : IDisposable
             foreach (var item in _computer.Hardware)
                 UpdateRecursively(item, hardware);
 
-            var cpu = hardware.Where(x => x.HardwareType == HardwareType.Cpu)
-                .SelectMany(x => x.Sensors)
-                .Where(s => s.SensorType == SensorType.Temperature && s.Value.HasValue)
-                .OrderByDescending(s => Preference(s.Name, "CPU Package", "CPU (Tctl/Tdie)", "Core Average", "Core Max"))
+            var cpus = hardware.Where(h => h.HardwareType == HardwareType.Cpu).ToArray();
+            LastCpuSensorInfo = cpus.Length == 0
+                ? "LibreHardwareMonitor did not find a CPU hardware entry."
+                : string.Join(Environment.NewLine + Environment.NewLine, cpus.Select(h =>
+                    h.Name + " (" + h.HardwareType + ")" + Environment.NewLine +
+                    string.Join(Environment.NewLine, h.Sensors
+                        .Where(s => s.SensorType is SensorType.Temperature or SensorType.Load or SensorType.Clock)
+                        .Select(s => "  [" + s.SensorType + "] " + s.Name + ": " +
+                            (s.Value.HasValue ? s.Value.Value.ToString("0.##") : "unavailable") +
+                            (s.SensorType == SensorType.Temperature ? " C" :
+                             s.SensorType == SensorType.Load ? " %" : " MHz")))));
+
+            // Ignore invalid values before ranking the temperature sensors.
+            // A zero-valued preferred sensor must not hide a valid alternative.
+            float? cpu = cpus.SelectMany(h => h.Sensors)
+                .Where(s => s.SensorType == SensorType.Temperature && s.Value is > 0 and <= 125)
+                .OrderByDescending(s => Preference(s.Name,
+                    "CPU Package", "CPU (Tctl/Tdie)", "CPU Tctl/Tdie", "Core Average", "Core Max"))
                 .Select(s => s.Value)
                 .FirstOrDefault();
-            if (cpu <= 0 || cpu > 125) cpu = null;
 
             // Prefer NVIDIA when available, then AMD, then Intel.
             // This avoids picking the integrated Vega graphics before the GTX 1650.
@@ -94,9 +109,10 @@ internal sealed class HardwareReader : IDisposable
             if (load is < 0 or > 100) load = null;
             return new(cpu, load, temperature, ram);
         }
-        catch
+        catch (Exception ex)
         {
-            // Sensors are optional; inaccessible sensors must not crash the overlay.
+            // Sensor failures should not crash the overlay. Keep the error available for diagnostics.
+            LastCpuSensorInfo = "CPU sensor polling failed: " + ex.Message;
             return new(null, null, null, ram);
         }
     }

@@ -44,6 +44,7 @@ internal sealed class OverlayApplicationContext : ApplicationContext
         _desktopMenu = new ToolStripMenuItem("Desktop preview", null, (_, _) => ToggleDesktop());
         menu.Items.Add(_gameMenu);
         menu.Items.Add(_desktopMenu);
+        menu.Items.Add("Copy CPU sensor info", null, (_, _) => CopyCpuSensors());
         menu.Items.Add("Copy GPU sensor info", null, (_, _) => CopyGpuSensors());
         menu.Opening += (_, _) => UpdateTrayMenu();
         menu.Items.Add("Reset session timer", null, (_, _) => { _clock.Reset(); });
@@ -142,6 +143,19 @@ internal sealed class OverlayApplicationContext : ApplicationContext
         _gameMenu.Text = "In-game overlay";
         _desktopMenu.Checked = _desktop.Visible;
         _desktopMenu.Text = "Desktop preview";
+    }
+
+    private void CopyCpuSensors()
+    {
+        try
+        {
+            Clipboard.SetText(_hardware.LastCpuSensorInfo);
+        }
+        catch (System.Runtime.InteropServices.ExternalException)
+        {
+            MessageBox.Show("The clipboard is busy. Try copying again.",
+                "Game Overlay", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
     }
 
     private void CopyGpuSensors()
