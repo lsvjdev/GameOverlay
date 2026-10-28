@@ -3,6 +3,7 @@
 
 using System;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -32,7 +33,12 @@ internal sealed class OverlayApplicationContext : ApplicationContext
         MainForm = _panel;
         _desktop = new DesktopStrip(_settings);
 
-        var menu = new ContextMenuStrip();
+        var menu = new ContextMenuStrip
+        {
+            BackColor = Color.FromArgb(242, 242, 242),
+            ForeColor = Color.FromArgb(30, 30, 30),
+            Renderer = new TrayMenuRenderer()
+        };
         menu.Items.Add("Open settings", null, (_, _) => OpenSettings());
         _gameMenu = new ToolStripMenuItem("In-game overlay", null, (_, _) => ToggleOverlay());
         _desktopMenu = new ToolStripMenuItem("Desktop preview", null, (_, _) => ToggleDesktop());
@@ -133,9 +139,9 @@ internal sealed class OverlayApplicationContext : ApplicationContext
     private void UpdateTrayMenu()
     {
         _gameMenu.Checked = _enabled;
-        _gameMenu.Text = _enabled ? "In-game overlay (on)" : "In-game overlay (off)";
+        _gameMenu.Text = "In-game overlay";
         _desktopMenu.Checked = _desktop.Visible;
-        _desktopMenu.Text = _desktop.Visible ? "Desktop preview (on)" : "Desktop preview (off)";
+        _desktopMenu.Text = "Desktop preview";
     }
 
     private void CopyGpuSensors()
@@ -190,5 +196,64 @@ internal sealed class OverlayApplicationContext : ApplicationContext
             _callback();
             return true;
         }
+    }
+}
+
+internal sealed class TrayMenuRenderer : ToolStripProfessionalRenderer
+{
+    private static readonly Color MenuColor = Color.FromArgb(242, 242, 242);
+    private static readonly Color CheckColor = Color.FromArgb(150, 201, 239);
+    private static readonly Color TickColor = Color.FromArgb(43, 49, 53);
+
+    protected override void OnRenderToolStripBackground(ToolStripRenderEventArgs e)
+    {
+        using var brush = new SolidBrush(MenuColor);
+        e.Graphics.FillRectangle(brush, e.AffectedBounds);
+    }
+
+    protected override void OnRenderImageMargin(ToolStripRenderEventArgs e)
+    {
+        using var brush = new SolidBrush(MenuColor);
+        e.Graphics.FillRectangle(brush, e.AffectedBounds);
+    }
+
+    protected override void OnRenderMenuItemBackground(ToolStripItemRenderEventArgs e)
+    {
+        if (!e.Item.Selected) return;
+        using var brush = new SolidBrush(Color.FromArgb(224, 232, 239));
+        e.Graphics.FillRectangle(brush, new Rectangle(Point.Empty, e.Item.Size));
+    }
+
+    protected override void OnRenderToolStripBorder(ToolStripRenderEventArgs e)
+    {
+        using var pen = new Pen(Color.FromArgb(198, 198, 198));
+        var bounds = e.ToolStrip.ClientRectangle;
+        if (bounds.Width > 0 && bounds.Height > 0)
+            e.Graphics.DrawRectangle(pen, bounds.Left, bounds.Top, bounds.Width - 1, bounds.Height - 1);
+    }
+
+    protected override void OnRenderItemCheck(ToolStripItemImageRenderEventArgs e)
+    {
+        // Soft blue square and a dark tick, without the default Windows blue border.
+        int size = Math.Max(16, Math.Min(22, e.Item.Height - 2));
+        int left = Math.Max(2, e.ImageRectangle.Left + (e.ImageRectangle.Width - size) / 2);
+        int top = (e.Item.Height - size) / 2;
+
+        using (var brush = new SolidBrush(CheckColor))
+            e.Graphics.FillRectangle(brush, left, top, size, size);
+
+        var previousSmoothing = e.Graphics.SmoothingMode;
+        e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+        using (var pen = new Pen(TickColor, Math.Max(1.5f, size * 0.09f))
+            { StartCap = LineCap.Round, EndCap = LineCap.Round, LineJoin = LineJoin.Round })
+        {
+            e.Graphics.DrawLines(pen, new[]
+            {
+                new PointF(left + size * 0.27f, top + size * 0.51f),
+                new PointF(left + size * 0.44f, top + size * 0.68f),
+                new PointF(left + size * 0.77f, top + size * 0.32f)
+            });
+        }
+        e.Graphics.SmoothingMode = previousSmoothing;
     }
 }
