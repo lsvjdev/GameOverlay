@@ -40,7 +40,7 @@ internal sealed class ControlPanel : Form
         });
 
         _preview = new PreviewBox(_settings) {
-            Location = new Point(18, 52), Size = new Size(604, 36)
+            Location = new Point(18, 52), Size = new Size(604, 28)
         };
         Controls.Add(_preview);
 
