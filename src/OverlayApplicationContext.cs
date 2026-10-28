@@ -60,8 +60,6 @@ internal sealed class OverlayApplicationContext : ApplicationContext
         _hotkeyRegistered = Native.RegisterHotKey(_panel.Handle, 10,
             Native.ModControl | Native.ModShift | Native.ModNoRepeat, Native.VkO);
         if (!_hotkeyRegistered) _panel.SetHotkeyWarning();
-        _panel.KeyPreview = true;
-        _panel.HandleCreated += (_, _) => { }; // the window stays alive while tray app runs
         Application.AddMessageFilter(new HotkeyFilter(() => ToggleOverlay()));
 
         _tick = new System.Windows.Forms.Timer { Interval = 1000 };
