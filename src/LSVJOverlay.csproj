@@ -6,6 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+    <Win32Manifest>app.manifest</Win32Manifest>
     <AssemblyName>GameOverlay</AssemblyName>
     <AssemblyTitle>Game Overlay</AssemblyTitle>
     <Product>Game Overlay</Product>
@@ -16,7 +17,7 @@
     <Authors>LSVJ-Coding</Authors>
     <Copyright>Copyright © 2026 LSVJ-Coding</Copyright>
     <PackageLicenseExpression>GPL-3.0-only</PackageLicenseExpression>
-    <RepositoryUrl>https://github.com/LSVJ-Coding/GameOverlay</RepositoryUrl>
+    <RepositoryUrl>https://github.com/lsvjdev/GameOverlay</RepositoryUrl>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="LibreHardwareMonitorLib" Version="0.9.6" />

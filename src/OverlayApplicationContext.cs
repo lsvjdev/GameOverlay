@@ -44,8 +44,10 @@ internal sealed class OverlayApplicationContext : ApplicationContext
         _desktopMenu = new ToolStripMenuItem("Desktop preview", null, (_, _) => ToggleDesktop());
         menu.Items.Add(_gameMenu);
         menu.Items.Add(_desktopMenu);
-        menu.Items.Add("Copy CPU sensor info", null, (_, _) => CopyCpuSensors());
-        menu.Items.Add("Copy GPU sensor info", null, (_, _) => CopyGpuSensors());
+        var sensors = new ToolStripMenuItem("Sensor info");
+        sensors.DropDownItems.Add("Copy CPU sensor info", null, (_, _) => CopyCpuSensors());
+        sensors.DropDownItems.Add("Copy GPU sensor info", null, (_, _) => CopyGpuSensors());
+        menu.Items.Add(sensors);
         menu.Opening += (_, _) => UpdateTrayMenu();
         menu.Items.Add("Reset session timer", null, (_, _) => { _clock.Reset(); });
         menu.Items.Add(new ToolStripSeparator());

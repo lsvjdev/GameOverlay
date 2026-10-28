@@ -17,6 +17,8 @@ The overlay shows FPS, a 12/24-hour clock, playtime, CPU and GPU readings, and R
 
 RTSS handles the in-game display. It is not included in this repository.
 
+Game Overlay requests administrator permission when launched. CPU temperature sensors on some systems, including tested Ryzen laptops, return no usable readings without elevated access. Windows will show a UAC prompt on launch.
+
 ## Building
 
 AppVeyor produces two Windows x64 builds. Download either ZIP from the build's Artifacts tab:
@@ -32,7 +34,7 @@ More detailed setup instructions will be added after the first round of testing.
 
 ## Bugs and suggestions
 
-Found a problem or have an idea? [Open an issue](https://github.com/LSVJ-Coding/GameOverlay/issues/new/choose).
+Found a problem or have an idea? [Open an issue](https://github.com/lsvjdev/GameOverlay/issues/new/choose).
 
 Please check existing issues before creating a new one. Bug reports are especially helpful when they include the Windows and RTSS versions and the game where the problem occurred.
 
