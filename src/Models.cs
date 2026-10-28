@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (c) 2026 LSVJ-Coding
+
 namespace LSVJOverlay;
 
 internal readonly record struct HardwareSample(float? CpuTempC, float? GpuLoadPercent, float? GpuTempC, int? RamPercent);
