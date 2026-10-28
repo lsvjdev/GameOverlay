@@ -47,6 +47,7 @@ internal sealed class HardwareReader : IDisposable
                 .OrderByDescending(s => Preference(s.Name, "CPU Package", "CPU (Tctl/Tdie)", "Core Average", "Core Max"))
                 .Select(s => s.Value)
                 .FirstOrDefault();
+            if (cpu <= 0 || cpu > 125) cpu = null;
 
             // Prefer a discrete card if present. Keep load/temp on the SAME GPU.
             var gpu = hardware.Where(h => h.HardwareType is HardwareType.GpuNvidia or HardwareType.GpuAmd or HardwareType.GpuIntel)
@@ -70,6 +71,8 @@ internal sealed class HardwareReader : IDisposable
                     .OrderByDescending(s => Preference(s.Name, "GPU Core", "GPU Temperature", "GPU Edge", "GPU Hot Spot"))
                     .Select(s => s.Value).FirstOrDefault();
             }
+            if (temperature <= 0 || temperature > 125) temperature = null;
+            if (load is < 0 or > 100) load = null;
             return new(cpu, load, temperature, ram);
         }
         catch
