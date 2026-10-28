@@ -6,9 +6,13 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
-    <AssemblyName>LSVJOverlay</AssemblyName>
+    <AssemblyName>GameOverlay</AssemblyName>
+    <AssemblyTitle>Game Overlay</AssemblyTitle>
+    <Product>Game Overlay</Product>
+    <Description>Lightweight Windows game performance overlay</Description>
+    <FileVersion>0.2.0.0</FileVersion>
     <RootNamespace>LSVJOverlay</RootNamespace>
-    <Version>0.1.0</Version>
+    <Version>0.2.0</Version>
     <Authors>LSVJ-Coding</Authors>
     <Copyright>Copyright © 2026 LSVJ-Coding</Copyright>
     <PackageLicenseExpression>GPL-3.0-only</PackageLicenseExpression>
