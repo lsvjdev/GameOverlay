@@ -19,7 +19,12 @@ RTSS handles the in-game display. It is not included in this repository.
 
 ## Building
 
-AppVeyor uses the included `appveyor.yml` to publish a Windows x64 build. The ZIP is available in the build's Artifacts tab after a successful build.
+AppVeyor produces two Windows x64 builds. Download either ZIP from the build's Artifacts tab:
+
+- `GameOverlay-standalone-win-x64.zip` includes the .NET runtime and works without installing it separately. The file is much larger.
+- `GameOverlay-small-win-x64.zip` needs the [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/8.0) installed on the PC, but takes less disk space.
+
+Both builds need RTSS separately for in-game rendering. The 12/24-hour clock and desktop preview position are saved in your local settings.
 
 To build locally, install the [.NET 8 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/8.0) and run `Build.cmd`.
 
