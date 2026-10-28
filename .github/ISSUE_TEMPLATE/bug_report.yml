@@ -1,0 +1,54 @@
+name: Bug report
+description: Report a problem with LSVJ Overlay.
+title: "[Bug] "
+body:
+  - type: markdown
+    attributes:
+      value: "Thanks for reporting a bug. Please check existing issues first."
+  - type: textarea
+    id: problem
+    attributes:
+      label: What's wrong?
+      description: Describe what happened.
+      placeholder: The FPS counter stays at -- when I open a game.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: How can we reproduce it?
+      description: List the steps if you can.
+      placeholder: |
+        1. Open RTSS.
+        2. Launch the overlay.
+        3. Start the game.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+    validations:
+      required: false
+  - type: input
+    id: game
+    attributes:
+      label: Game (if relevant)
+      placeholder: Name of game
+  - type: input
+    id: windows
+    attributes:
+      label: Windows version
+      placeholder: Windows 11 24H2
+  - type: input
+    id: rtss
+    attributes:
+      label: RTSS version
+      description: You can find this in RTSS.
+  - type: textarea
+    id: details
+    attributes:
+      label: Anything else?
+      description: Screenshots, logs, app version, or other details that might help. Remove personal information before sharing.
+    validations:
+      required: false
