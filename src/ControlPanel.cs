@@ -136,11 +136,14 @@ internal sealed class ControlPanel : Form
         protected override void OnPaint(PaintEventArgs e)
         {
             base.OnPaint(e);
-            using var bmp = new Bitmap(StripPainter.BaseWidth, StripPainter.BaseHeight);
+            int targetWidth = StripPainter.MeasureWidth(e.Graphics, _snapshot, _settings.Use24HourClock);
+            using var bmp = new Bitmap(Math.Max(1, targetWidth), StripPainter.BaseHeight);
             using (var g = Graphics.FromImage(bmp))
                 StripPainter.Paint(g, new Rectangle(0, 0, bmp.Width, bmp.Height), _snapshot, _settings.Use24HourClock);
             e.Graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
-            e.Graphics.DrawImage(bmp, ClientRectangle);
+            float scale = Math.Min(1f, ClientSize.Width / (float)bmp.Width);
+            int drawWidth = (int)Math.Ceiling(bmp.Width * scale);
+            e.Graphics.DrawImage(bmp, new Rectangle(0, 0, drawWidth, ClientSize.Height));
         }
     }
 }
