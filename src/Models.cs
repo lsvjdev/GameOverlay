@@ -13,7 +13,7 @@ internal sealed record MetricSnapshot(
 {
     public static MetricSnapshot Empty => new(DateTime.Now, null, null, null, null, null, null, "No game detected");
     public string FpsText => Fps.HasValue ? Math.Round(Fps.Value).ToString("0") : "--";
-    public string TimeText => LocalTime.ToString("hh:mm:ss tt", System.Globalization.CultureInfo.InvariantCulture);
+    public string GetTimeText(bool use24HourClock) => LocalTime.ToString(use24HourClock ? "HH:mm:ss" : "hh:mm:ss tt", System.Globalization.CultureInfo.InvariantCulture);
     public string PlaytimeText => GameTime is { } t
         ? t.TotalHours >= 1 ? $"{(int)t.TotalHours:00}:{t.Minutes:00}" : $"{t.Minutes:00}:{t.Seconds:00}"
         : "--:--";
