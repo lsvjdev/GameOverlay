@@ -1,49 +1,40 @@
-# LSVJ Performance Overlay
+# LSVJ Overlay
 
-**Experimental lightweight Windows performance overlay**, using RTSS to render a
-Razer-style metrics strip in compatible fullscreen games.
+LSVJ Overlay is a small Windows performance overlay that uses RivaTuner Statistics Server (RTSS) to display system stats in games.
 
-Features: FPS, local clock, game-session timer, CPU/GPU metrics, RAM usage,
-desktop preview, tray controls, and Ctrl + Shift + O toggling.
+The goal is a clean, compact overlay without a separate game booster or a large background app.
 
-> Prototype status: the project has **not yet been compiled and tested on a
-> Windows worker**, and some games/anti-cheat systems do not support RTSS.
-> The displayed in-game fonts and background are partly controlled by RTSS.
+## Current status
 
-## Building with AppVeyor
+**Early prototype.** The project has not yet been tested in a Windows game. Some features may not work as expected, and RTSS support depends on the game. There is no official installer or stable release yet.
 
-The checked-in **appveyor.yml** builds a self-contained Windows x64 app on
-AppVeyor's Windows worker, with no GitHub Actions or Codemagic required.
+The overlay is designed to show FPS, time, playtime, CPU and GPU readings, and RAM usage. It also has a desktop preview and a `Ctrl + Shift + O` hotkey.
 
-1. Connect this public repository to AppVeyor and start a build.
-2. Download **LSVJOverlay-win-x64.zip** from **Artifacts**.
-3. Extract all files, keep any bundled notices/licenses, and launch
-   **LSVJOverlay.exe**. Install RTSS separately first.
+## Requirements
 
-For a local build with the .NET 8 SDK, use **Build.cmd**.
+- Windows (x64)
+- [RivaTuner Statistics Server](https://www.guru3d.com/download/rtss-rivatuner-statistics-server-download/) installed separately
 
-[Download RTSS independently](https://www.guru3d.com/download/rtss-rivatuner-statistics-server-download/).
+RTSS handles the in-game display. It is not included in this repository.
 
-## License & ownership
+## Building
 
-**Copyright © 2026 LSVJ-Coding.** Original application source code is provided
-under **GNU GPL-3.0-only**. See [LICENSE](LICENSE).
+AppVeyor uses the included `appveyor.yml` to publish a Windows x64 build. The ZIP is available in the build's Artifacts tab after a successful build.
 
-This is genuine open-source software: you may use, study, modify, and
-redistribute it under GPLv3's terms, including commercially. Modifications
-distributed as a covered work must comply with GPLv3; original copyright
-ownership remains with the original rightsholders.
+To build locally, install the [.NET 8 SDK](https://dotnet.microsoft.com/en-us/download/dotnet/8.0) and run `Build.cmd`.
 
-- [Third-party notices](THIRD-PARTY-NOTICES.md) — library credits, distinct
-  license terms, RTSS separation, and .NET Windows licensing.
-- [LICENSES](LICENSES) — preserved third-party license texts and original
-  LibreHardwareMonitor third-party notices.
+More detailed setup instructions will be added after the first round of testing.
 
-Before making an official release or installer, verify that the actual
-published binaries have the required notices/permissions and provide
-**corresponding source for that exact release**, ideally using a tagged Git
-commit. Don't delete the source repository while public binary distributions
-still rely on it for source access.
+## Bugs and suggestions
 
-RTSS, its installer, and drivers are **not** redistributed by this project.
-This project is independent of Razer and the other upstream software vendors.
+Found a problem or have an idea? [Open an issue](https://github.com/LSVJ-Coding/GameOverlay/issues/new/choose).
+
+Please check existing issues before creating a new one. Bug reports are especially helpful when they include the Windows and RTSS versions and the game where the problem occurred.
+
+## License
+
+Copyright (c) 2026 LSVJ-Coding.
+
+The original project code is licensed under [GPL-3.0-only](LICENSE). External libraries retain their own licenses. See [third-party notices](THIRD-PARTY-NOTICES.md) for details.
+
+LSVJ Overlay is an independent project and is not affiliated with Razer, MSI, or the developers of RTSS.
