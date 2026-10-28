@@ -16,7 +16,7 @@ internal static class StripPainter
     private static readonly Color LabelColor = Color.FromArgb(190, 180, 188);
     private static readonly Color ValueColor = Color.FromArgb(77, 218, 82);
 
-    public static void Paint(Graphics g, Rectangle canvas, MetricSnapshot data)
+    public static void Paint(Graphics g, Rectangle canvas, MetricSnapshot data, bool use24HourClock = true)
     {
         g.SmoothingMode = SmoothingMode.AntiAlias;
         g.Clear(Color.FromArgb(56, 43, 56));
@@ -35,7 +35,7 @@ internal static class StripPainter
         }
 
         T("FPS", 14, false); T(data.FpsText, 62, true);
-        T("Time", 143, false); T(data.TimeText, 205, true);
+        T("Time", 143, false); T(data.GetTimeText(use24HourClock), 205, true);
         T("Playtime", 358, false); T(data.PlaytimeText, 453, true);
         T("CPU", 541, false); T(data.CpuText, 597, true);
         T("GPU", 689, false); T(data.GpuLoadText, 745, true); T(data.GpuTempText, 807, true);
@@ -47,18 +47,32 @@ internal static class StripPainter
 internal sealed class DesktopStrip : Form
 {
     private MetricSnapshot _snapshot = MetricSnapshot.Empty;
+    private readonly AppSettings _settings;
 
-    public DesktopStrip()
+    public DesktopStrip(AppSettings settings)
     {
+        _settings = settings;
         FormBorderStyle = FormBorderStyle.None;
         ShowInTaskbar = false;
         TopMost = true;
         StartPosition = FormStartPosition.Manual;
         Width = Math.Min(StripPainter.BaseWidth, Screen.PrimaryScreen?.WorkingArea.Width - 20 ?? StripPainter.BaseWidth);
         Height = StripPainter.BaseHeight;
-        Location = new Point(Math.Max(0, (Screen.PrimaryScreen?.Bounds.Width ?? Width) / 2 - Width / 2), 22);
+        UpdatePosition();
         DoubleBuffered = true;
         Opacity = .93;
+    }
+
+    public void UpdatePosition()
+    {
+        var work = Screen.PrimaryScreen?.WorkingArea ?? new Rectangle(0, 0, 1920, 1080);
+        int left = _settings.DesktopPosition switch
+        {
+            StripPosition.TopCenter => work.Left + (work.Width - Width) / 2,
+            StripPosition.TopRight => work.Right - Width - 12,
+            _ => work.Left + 12
+        };
+        Location = new Point(Math.Max(work.Left, left), work.Top + 8);
     }
 
     protected override bool ShowWithoutActivation => true;
@@ -82,6 +96,6 @@ internal sealed class DesktopStrip : Form
     protected override void OnPaint(PaintEventArgs e)
     {
         base.OnPaint(e);
-        StripPainter.Paint(e.Graphics, ClientRectangle, _snapshot);
+        StripPainter.Paint(e.Graphics, ClientRectangle, _snapshot, _settings.Use24HourClock);
     }
 }
