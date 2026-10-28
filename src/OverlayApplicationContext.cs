@@ -14,6 +14,8 @@ internal sealed class OverlayApplicationContext : ApplicationContext
     private readonly ControlPanel _panel;
     private readonly DesktopStrip _desktop;
     private readonly NotifyIcon _tray;
+    private readonly ToolStripMenuItem _gameMenu;
+    private readonly ToolStripMenuItem _desktopMenu;
     private readonly System.Windows.Forms.Timer _tick;
     private readonly HardwareReader _hardware = new();
     private readonly RtssClient _rtss = new();
@@ -32,8 +34,12 @@ internal sealed class OverlayApplicationContext : ApplicationContext
 
         var menu = new ContextMenuStrip();
         menu.Items.Add("Open settings", null, (_, _) => OpenSettings());
-        menu.Items.Add("Toggle in-game overlay", null, (_, _) => ToggleOverlay());
-        menu.Items.Add("Toggle desktop strip", null, (_, _) => ToggleDesktop());
+        _gameMenu = new ToolStripMenuItem("In-game overlay", null, (_, _) => ToggleOverlay());
+        _desktopMenu = new ToolStripMenuItem("Desktop preview", null, (_, _) => ToggleDesktop());
+        menu.Items.Add(_gameMenu);
+        menu.Items.Add(_desktopMenu);
+        menu.Items.Add("Copy GPU sensor info", null, (_, _) => CopyGpuSensors());
+        menu.Opening += (_, _) => UpdateTrayMenu();
         menu.Items.Add("Reset session timer", null, (_, _) => { _clock.Reset(); });
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add("Exit", null, (_, _) => ExitApplication());
@@ -45,6 +51,7 @@ internal sealed class OverlayApplicationContext : ApplicationContext
             Visible = true
         };
         _tray.DoubleClick += (_, _) => OpenSettings();
+        UpdateTrayMenu();
 
         _panel.OverlayToggleRequested += ToggleOverlay;
         _panel.DesktopToggleRequested += ToggleDesktop;
@@ -110,7 +117,8 @@ internal sealed class OverlayApplicationContext : ApplicationContext
     {
         _enabled = !_enabled;
         if (!_enabled) _rtss.Clear();
-        else _rtss.Publish(RtssClient.BuildRichText(_last));
+        else _rtss.Publish(RtssClient.BuildRichText(_last, _settings.Use24HourClock));
+        UpdateTrayMenu();
         UpdatePanel();
     }
 
@@ -118,7 +126,29 @@ internal sealed class OverlayApplicationContext : ApplicationContext
     {
         if (_desktop.Visible) _desktop.Hide();
         else _desktop.Show();
+        UpdateTrayMenu();
         UpdatePanel();
+    }
+
+    private void UpdateTrayMenu()
+    {
+        _gameMenu.Checked = _enabled;
+        _gameMenu.Text = _enabled ? "In-game overlay (on)" : "In-game overlay (off)";
+        _desktopMenu.Checked = _desktop.Visible;
+        _desktopMenu.Text = _desktop.Visible ? "Desktop preview (on)" : "Desktop preview (off)";
+    }
+
+    private void CopyGpuSensors()
+    {
+        try
+        {
+            Clipboard.SetText(_hardware.LastGpuSensorInfo);
+        }
+        catch (System.Runtime.InteropServices.ExternalException)
+        {
+            MessageBox.Show("The clipboard is busy. Try copying again.",
+                "Game Overlay", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
     }
 
     private void OpenSettings()
