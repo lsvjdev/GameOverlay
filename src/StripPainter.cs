@@ -52,8 +52,7 @@ internal static class StripPainter
             g.FillRectangle(background, canvas);
 
         g.TextRenderingHint = TextRenderingHint.AntiAliasGridFit;
-        float scale = Math.Min(1f, canvas.Width / (float)BaseWidth);
-        using var font = new Font("Segoe UI", 9.2f * scale, FontStyle.Bold, GraphicsUnit.Point);
+        using var font = new Font("Segoe UI", 9.2f, FontStyle.Bold, GraphicsUnit.Point);
         using var labels = new SolidBrush(LabelColor);
         using var numbers = new SolidBrush(ValueColor);
         using var format = (StringFormat)StringFormat.GenericTypographic.Clone();
@@ -61,7 +60,7 @@ internal static class StripPainter
 
         var parts = GetParts(data, use24HourClock);
 
-        float gap = 18f * scale;
+        const float gap = 18f;
         float contentWidth = 0;
         foreach (var (text, _, groupEnd) in parts)
         {
