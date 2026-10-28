@@ -205,12 +205,12 @@ internal sealed class RtssClient
         static string Grey(string text) => $"<C0>{text}<C>";
         static string Green(string text) => $"<C1>{text}<C>";
         return "<C0=BDB5BC><C1=52D955>\r" +
-               Grey("FPS ") + Green(m.FpsText) + "        " +
-               Grey("Time ") + Green(m.GetTimeText(use24HourClock)) + "        " +
-               Grey("Playtime ") + Green(m.PlaytimeText) + "        " +
-               Grey("CPU ") + Green(m.CpuText) + "        " +
-               Grey("GPU ") + Green(m.GpuLoadText + "  " + m.GpuTempText) + "        " +
-               Grey("RAM ") + Green(m.RamText) + "     " +
+               Grey("FPS ") + Green(m.FpsText) + "   " +
+               Grey("Time ") + Green(m.GetTimeText(use24HourClock)) + "   " +
+               Grey("Playtime ") + Green(m.PlaytimeText) + "   " +
+               Grey("CPU ") + Green(m.CpuText) + "   " +
+               Grey("GPU ") + Green(m.GpuLoadText + "  " + m.GpuTempText) + "   " +
+               Grey("RAM ") + Green(m.RamText) + "   " +
                Grey("(Ctrl + Shift + O)");
     }
 }
