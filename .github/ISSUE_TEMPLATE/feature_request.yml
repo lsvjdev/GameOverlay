@@ -1,5 +1,5 @@
 name: Feature request
-description: Suggest a feature or improvement.
+description: Suggest a feature or improvement for Game Overlay.
 title: "[Feature] "
 body:
   - type: markdown

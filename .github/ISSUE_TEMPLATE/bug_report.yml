@@ -1,5 +1,5 @@
 name: Bug report
-description: Report a problem with LSVJ Overlay.
+description: Report a problem with Game Overlay.
 title: "[Bug] "
 body:
   - type: markdown
