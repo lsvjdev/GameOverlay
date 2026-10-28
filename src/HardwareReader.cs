@@ -13,6 +13,8 @@ internal sealed class HardwareReader : IDisposable
     private Computer? _computer;
     private bool _attemptedInit;
 
+    public string LastGpuSensorInfo { get; private set; } = "No GPU sensor readings available yet.";
+
     public HardwareSample Read()
     {
         int? ram = null;
@@ -49,10 +51,20 @@ internal sealed class HardwareReader : IDisposable
                 .FirstOrDefault();
             if (cpu <= 0 || cpu > 125) cpu = null;
 
-            // Prefer a discrete card if present. Keep load/temp on the SAME GPU.
-            var gpu = hardware.Where(h => h.HardwareType is HardwareType.GpuNvidia or HardwareType.GpuAmd or HardwareType.GpuIntel)
+            // Prefer a discrete card if present. Keep load and temperature on the same GPU.
+            var gpus = hardware.Where(h => h.HardwareType is HardwareType.GpuNvidia or HardwareType.GpuAmd or HardwareType.GpuIntel)
                 .OrderBy(h => h.HardwareType == HardwareType.GpuIntel ? 1 : 0)
-                .FirstOrDefault();
+                .ToArray();
+            LastGpuSensorInfo = gpus.Length == 0
+                ? "No supported GPU sensors were found."
+                : string.Join(Environment.NewLine + Environment.NewLine, gpus.Select(h =>
+                    h.Name + " (" + h.HardwareType + ")" + Environment.NewLine +
+                    string.Join(Environment.NewLine, h.Sensors
+                        .Where(s => s.SensorType is SensorType.Load or SensorType.Temperature)
+                        .Select(s => "  " + s.Name + ": " +
+                            (s.Value.HasValue ? s.Value.Value.ToString("0.##") : "unavailable") +
+                            (s.SensorType == SensorType.Temperature ? " C" : " %")))));
+            var gpu = gpus.FirstOrDefault();
             float? load = null;
             float? temperature = null;
             if (gpu is not null)
