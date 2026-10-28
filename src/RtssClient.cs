@@ -173,7 +173,7 @@ internal sealed class RtssClient
             // Keep the legacy slot empty so it cannot duplicate the formatted text.
             WriteCString(view, slot, 256, "");
             BumpFrame(view);
-            ConnectionMessage = "Connected to RTSS — overlay published";
+            ConnectionMessage = "Connected to RTSS";
             return true;
         }
     }
@@ -200,13 +200,13 @@ internal sealed class RtssClient
     }
 
     // Stable RTSS OSD format tags: define grey/green palettes, then apply to each span.
-    public static string BuildRichText(MetricSnapshot m)
+    public static string BuildRichText(MetricSnapshot m, bool use24HourClock = true)
     {
         static string Grey(string text) => $"<C0>{text}<C>";
         static string Green(string text) => $"<C1>{text}<C>";
         return "<C0=BDB5BC><C1=52D955>\r" +
                Grey("FPS ") + Green(m.FpsText) + "        " +
-               Grey("Time ") + Green(m.TimeText) + "        " +
+               Grey("Time ") + Green(m.GetTimeText(use24HourClock)) + "        " +
                Grey("Playtime ") + Green(m.PlaytimeText) + "        " +
                Grey("CPU ") + Green(m.CpuText) + "        " +
                Grey("GPU ") + Green(m.GpuLoadText + "  " + m.GpuTempText) + "        " +
