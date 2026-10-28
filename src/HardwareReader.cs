@@ -51,9 +51,16 @@ internal sealed class HardwareReader : IDisposable
                 .FirstOrDefault();
             if (cpu <= 0 || cpu > 125) cpu = null;
 
-            // Prefer a discrete card if present. Keep load and temperature on the same GPU.
+            // Prefer NVIDIA when available, then AMD, then Intel.
+            // This avoids picking the integrated Vega graphics before the GTX 1650.
+            // Keep GPU load and temperature readings on the same device.
             var gpus = hardware.Where(h => h.HardwareType is HardwareType.GpuNvidia or HardwareType.GpuAmd or HardwareType.GpuIntel)
-                .OrderBy(h => h.HardwareType == HardwareType.GpuIntel ? 1 : 0)
+                .OrderBy(h => h.HardwareType switch
+                {
+                    HardwareType.GpuNvidia => 0,
+                    HardwareType.GpuAmd => 1,
+                    _ => 2
+                })
                 .ToArray();
             LastGpuSensorInfo = gpus.Length == 0
                 ? "No supported GPU sensors were found."
