@@ -8,7 +8,7 @@ The goal is a clean, compact overlay without a separate game booster or a large 
 
 **Early prototype.** The app has been built and launched on Windows, but the in-game RTSS integration still needs testing. Some features may not work as expected, and RTSS support depends on the game. There is no official installer or stable release yet.
 
-The overlay is designed to show FPS, time (12-hour or 24-hour), playtime, CPU and GPU readings, and RAM usage. The desktop preview can be positioned at the top left, center, or right. It also has a desktop preview and a `Ctrl + Shift + O` hotkey.
+The overlay shows FPS, a 12/24-hour clock, playtime, CPU and GPU readings, and RAM usage. The optional desktop strip can be placed at the top left, center, or right. Use `Ctrl + Shift + O` to toggle the in-game display.
 
 ## Requirements
 
