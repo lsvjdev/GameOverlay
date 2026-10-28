@@ -3,44 +3,67 @@
 
 using System;
 using System.Drawing;
-using System.Drawing.Drawing2D;
+using System.Drawing.Text;
 using System.Windows.Forms;
 
 namespace LSVJOverlay;
 
-/// <summary>Screenshot-based layout coordinates, rescaled from a 1229px-wide reference.</summary>
 internal static class StripPainter
 {
-    public const int BaseWidth = 1229;
-    public const int BaseHeight = 40;
-    private static readonly Color LabelColor = Color.FromArgb(190, 180, 188);
-    private static readonly Color ValueColor = Color.FromArgb(77, 218, 82);
+    public const int BaseWidth = 780;
+    public const int BaseHeight = 28;
+
+    private static readonly Color BackgroundColor = Color.FromArgb(57, 43, 59);
+    private static readonly Color LabelColor = Color.FromArgb(196, 190, 199);
+    private static readonly Color ValueColor = Color.FromArgb(81, 216, 91);
 
     public static void Paint(Graphics g, Rectangle canvas, MetricSnapshot data, bool use24HourClock = true)
     {
-        g.SmoothingMode = SmoothingMode.AntiAlias;
-        g.Clear(Color.FromArgb(56, 43, 56));
-        float scale = Math.Min(1, canvas.Width / (float)BaseWidth);
-        float fontSize = scale < 0.88f ? 11.0f : 12.0f;
-        using var font = new Font("Segoe UI", fontSize, FontStyle.Bold, GraphicsUnit.Point);
-        const TextFormatFlags flags = TextFormatFlags.NoPadding | TextFormatFlags.SingleLine;
+        using (var background = new SolidBrush(BackgroundColor))
+            g.FillRectangle(background, canvas);
 
-        void T(string text, float x, bool green)
+        g.TextRenderingHint = TextRenderingHint.AntiAliasGridFit;
+        float scale = Math.Min(1f, canvas.Width / (float)BaseWidth);
+        using var font = new Font("Segoe UI", 9.2f * scale, FontStyle.Bold, GraphicsUnit.Point);
+        using var labels = new SolidBrush(LabelColor);
+        using var numbers = new SolidBrush(ValueColor);
+        using var format = (StringFormat)StringFormat.GenericTypographic.Clone();
+        format.FormatFlags |= StringFormatFlags.MeasureTrailingSpaces | StringFormatFlags.NoWrap;
+
+        var parts = new (string Text, bool Value, bool GroupEnd)[]
         {
-            int px = (int)(x * scale);
-            var size = TextRenderer.MeasureText(g, text, font, new Size(int.MaxValue, canvas.Height), flags);
-            TextRenderer.DrawText(g, text, font,
-                new Point(canvas.Left + px, canvas.Top + (canvas.Height - size.Height) / 2),
-                green ? ValueColor : LabelColor, flags);
+            ("FPS ", false, false), (data.FpsText, true, true),
+            ("Time ", false, false), (data.GetTimeText(use24HourClock), true, true),
+            ("Playtime ", false, false), (data.PlaytimeText, true, true),
+            ("CPU ", false, false), (data.CpuText, true, true),
+            ("GPU ", false, false), (data.GpuLoadText, true, false),
+            ("  ", false, false), (data.GpuTempText, true, true),
+            ("RAM ", false, false), (data.RamText, true, true),
+            ("(Ctrl + Shift + O)", false, false)
+        };
+
+        float gap = 18f * scale;
+        float contentWidth = 0;
+        foreach (var (text, _, groupEnd) in parts)
+        {
+            contentWidth += g.MeasureString(text, font, PointF.Empty, format).Width;
+            if (groupEnd) contentWidth += gap;
         }
 
-        T("FPS", 14, false); T(data.FpsText, 62, true);
-        T("Time", 143, false); T(data.GetTimeText(use24HourClock), 205, true);
-        T("Playtime", 358, false); T(data.PlaytimeText, 453, true);
-        T("CPU", 541, false); T(data.CpuText, 597, true);
-        T("GPU", 689, false); T(data.GpuLoadText, 745, true); T(data.GpuTempText, 807, true);
-        T("RAM", 891, false); T(data.RamText, 948, true);
-        T("(Ctrl + Shift + O)", 1024, false);
+        float horizontalScale = Math.Min(1f, (canvas.Width - 16f) / Math.Max(1f, contentWidth));
+        var state = g.Save();
+        g.TranslateTransform(canvas.Left + 8f, 0);
+        g.ScaleTransform(horizontalScale, 1f);
+
+        float x = 0;
+        float y = canvas.Top + (canvas.Height - font.GetHeight(g)) / 2f;
+        foreach (var (text, value, groupEnd) in parts)
+        {
+            g.DrawString(text, font, value ? numbers : labels, new PointF(x, y), format);
+            x += g.MeasureString(text, font, PointF.Empty, format).Width;
+            if (groupEnd) x += gap;
+        }
+        g.Restore(state);
     }
 }
 
@@ -56,11 +79,11 @@ internal sealed class DesktopStrip : Form
         ShowInTaskbar = false;
         TopMost = true;
         StartPosition = FormStartPosition.Manual;
-        Width = Math.Min(StripPainter.BaseWidth, Screen.PrimaryScreen?.WorkingArea.Width - 20 ?? StripPainter.BaseWidth);
+        Width = Math.Min(StripPainter.BaseWidth, (Screen.PrimaryScreen?.WorkingArea.Width ?? 1920) - 24);
         Height = StripPainter.BaseHeight;
         UpdatePosition();
         DoubleBuffered = true;
-        Opacity = .93;
+        Opacity = 0.76;
     }
 
     public void UpdatePosition()
@@ -76,13 +99,14 @@ internal sealed class DesktopStrip : Form
     }
 
     protected override bool ShowWithoutActivation => true;
+
     protected override CreateParams CreateParams
     {
         get
         {
             var cp = base.CreateParams;
-            cp.ExStyle |= 0x00000080 /* TOOLWINDOW */ | 0x08000000 /* NOACTIVATE */ |
-                          0x00000020 /* TRANSPARENT, click-through */;
+            cp.ExStyle |= 0x00000080 /* tool window */ | 0x08000000 /* no activate */ |
+                          0x00000020 /* click through */;
             return cp;
         }
     }
