@@ -1,0 +1,28 @@
+name: Feature request
+description: Suggest a feature or improvement.
+title: "[Feature] "
+body:
+  - type: markdown
+    attributes:
+      value: "Please check existing issues before suggesting something new."
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would you like to see?
+      description: Keep it simple. A short description is fine.
+    validations:
+      required: true
+  - type: textarea
+    id: reason
+    attributes:
+      label: Why would it be useful?
+      description: What problem would it solve?
+    validations:
+      required: false
+  - type: textarea
+    id: details
+    attributes:
+      label: Extra details
+      description: Mockups, examples, or anything else worth mentioning.
+    validations:
+      required: false
