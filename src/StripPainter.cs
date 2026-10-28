@@ -13,9 +13,38 @@ internal static class StripPainter
     public const int BaseWidth = 780;
     public const int BaseHeight = 28;
 
-    private static readonly Color BackgroundColor = Color.FromArgb(57, 43, 59);
+    private static readonly Color BackgroundColor = Color.FromArgb(18, 19, 21);
     private static readonly Color LabelColor = Color.FromArgb(196, 190, 199);
     private static readonly Color ValueColor = Color.FromArgb(81, 216, 91);
+
+    private static (string Text, bool Value, bool GroupEnd)[] GetParts(MetricSnapshot data, bool use24HourClock)
+        => new (string Text, bool Value, bool GroupEnd)[]
+        {
+            ("FPS ", false, false), (data.FpsText, true, true),
+            ("Time ", false, false), (data.GetTimeText(use24HourClock), true, true),
+            ("Playtime ", false, false), (data.PlaytimeText, true, true),
+            ("CPU ", false, false), (data.CpuText, true, true),
+            ("GPU ", false, false), (data.GpuLoadText, true, false),
+            ("  ", false, false), (data.GpuTempText, true, true),
+            ("RAM ", false, false), (data.RamText, true, true),
+            ("(Ctrl + Shift + O)", false, false)
+        };
+
+    // Match the window width to the actual text, not a fixed 780px strip.
+    // This also accounts for different DPI scales, clock formats and available values.
+    public static int MeasureWidth(Graphics g, MetricSnapshot data, bool use24HourClock)
+    {
+        using var font = new Font("Segoe UI", 9.2f, FontStyle.Bold, GraphicsUnit.Point);
+        using var format = (StringFormat)StringFormat.GenericTypographic.Clone();
+        format.FormatFlags |= StringFormatFlags.MeasureTrailingSpaces | StringFormatFlags.NoWrap;
+        float total = 0;
+        foreach (var (text, _, groupEnd) in GetParts(data, use24HourClock))
+        {
+            total += g.MeasureString(text, font, PointF.Empty, format).Width;
+            if (groupEnd) total += 18f;
+        }
+        return (int)Math.Ceiling(total + 16f);
+    }
 
     public static void Paint(Graphics g, Rectangle canvas, MetricSnapshot data, bool use24HourClock = true)
     {
@@ -30,17 +59,7 @@ internal static class StripPainter
         using var format = (StringFormat)StringFormat.GenericTypographic.Clone();
         format.FormatFlags |= StringFormatFlags.MeasureTrailingSpaces | StringFormatFlags.NoWrap;
 
-        var parts = new (string Text, bool Value, bool GroupEnd)[]
-        {
-            ("FPS ", false, false), (data.FpsText, true, true),
-            ("Time ", false, false), (data.GetTimeText(use24HourClock), true, true),
-            ("Playtime ", false, false), (data.PlaytimeText, true, true),
-            ("CPU ", false, false), (data.CpuText, true, true),
-            ("GPU ", false, false), (data.GpuLoadText, true, false),
-            ("  ", false, false), (data.GpuTempText, true, true),
-            ("RAM ", false, false), (data.RamText, true, true),
-            ("(Ctrl + Shift + O)", false, false)
-        };
+        var parts = GetParts(data, use24HourClock);
 
         float gap = 18f * scale;
         float contentWidth = 0;
@@ -83,7 +102,7 @@ internal sealed class DesktopStrip : Form
         Height = StripPainter.BaseHeight;
         UpdatePosition();
         DoubleBuffered = true;
-        Opacity = 0.76;
+        Opacity = 0.68;
     }
 
     public void UpdatePosition()
@@ -111,10 +130,21 @@ internal sealed class DesktopStrip : Form
         }
     }
 
+    public void RefreshLayout()
+    {
+        using var graphics = CreateGraphics();
+        var work = Screen.PrimaryScreen?.WorkingArea ?? new Rectangle(0, 0, 1920, 1080);
+        int maxWidth = Math.Max(1, work.Width - 24);
+        int width = Math.Clamp(StripPainter.MeasureWidth(graphics, _snapshot, _settings.Use24HourClock), 1, maxWidth);
+        if (Width != width) Width = width;
+        UpdatePosition();
+        if (Visible) Invalidate();
+    }
+
     public void UpdateMetrics(MetricSnapshot snapshot)
     {
         _snapshot = snapshot;
-        if (Visible) Invalidate();
+        RefreshLayout();
     }
 
     protected override void OnPaint(PaintEventArgs e)
