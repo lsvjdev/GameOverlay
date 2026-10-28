@@ -56,7 +56,7 @@ internal sealed class OverlayApplicationContext : ApplicationContext
         _panel.OverlayToggleRequested += ToggleOverlay;
         _panel.DesktopToggleRequested += ToggleDesktop;
         _panel.ResetRequested += () => _clock.Reset();
-        _panel.SettingsChanged += () => { _desktop.UpdatePosition(); _desktop.Invalidate(); if (_enabled) _rtss.Publish(RtssClient.BuildRichText(_last, _settings.Use24HourClock)); };
+        _panel.SettingsChanged += () => { _desktop.RefreshLayout(); if (_enabled) _rtss.Publish(RtssClient.BuildRichText(_last, _settings.Use24HourClock)); };
         _panel.FormClosing += (_, e) =>
         {
             if (_exiting) return;
