@@ -10,6 +10,7 @@ namespace LSVJOverlay;
 
 internal sealed class OverlayApplicationContext : ApplicationContext
 {
+    private readonly AppSettings _settings = AppSettings.Load();
     private readonly ControlPanel _panel;
     private readonly DesktopStrip _desktop;
     private readonly NotifyIcon _tray;
@@ -25,9 +26,9 @@ internal sealed class OverlayApplicationContext : ApplicationContext
 
     public OverlayApplicationContext()
     {
-        _panel = new ControlPanel();
+        _panel = new ControlPanel(_settings);
         MainForm = _panel;
-        _desktop = new DesktopStrip();
+        _desktop = new DesktopStrip(_settings);
 
         var menu = new ContextMenuStrip();
         menu.Items.Add("Open settings", null, (_, _) => OpenSettings());
@@ -39,7 +40,7 @@ internal sealed class OverlayApplicationContext : ApplicationContext
         _tray = new NotifyIcon
         {
             Icon = SystemIcons.Application,
-            Text = "LSVJ Performance Overlay",
+            Text = "Game Overlay",
             ContextMenuStrip = menu,
             Visible = true
         };
@@ -48,6 +49,7 @@ internal sealed class OverlayApplicationContext : ApplicationContext
         _panel.OverlayToggleRequested += ToggleOverlay;
         _panel.DesktopToggleRequested += ToggleDesktop;
         _panel.ResetRequested += () => _clock.Reset();
+        _panel.SettingsChanged += () => { _desktop.UpdatePosition(); _desktop.Invalidate(); if (_enabled) _rtss.Publish(RtssClient.BuildRichText(_last, _settings.Use24HourClock)); };
         _panel.FormClosing += (_, e) =>
         {
             if (_exiting) return;
@@ -86,7 +88,7 @@ internal sealed class OverlayApplicationContext : ApplicationContext
 
             if (_enabled)
             {
-                _rtss.Publish(RtssClient.BuildRichText(_last));
+                _rtss.Publish(RtssClient.BuildRichText(_last, _settings.Use24HourClock));
             }
             _desktop.UpdateMetrics(_last);
             UpdatePanel();
