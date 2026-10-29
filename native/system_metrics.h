@@ -2,11 +2,14 @@
 #pragma once
 
 #include <windows.h>
+#include <powrprof.h>
 #include <cstdint>
+#include <vector>
 
 struct SystemMetrics
 {
     int CpuPercent = -1;
+    int CpuFrequencyMhz = -1;
     int RamPercent = -1;
 
     void Refresh()
@@ -17,6 +20,8 @@ struct SystemMetrics
         RamPercent = GlobalMemoryStatusEx(&memory)
             ? static_cast<int>(memory.dwMemoryLoad)
             : -1;
+
+        RefreshFrequency();
 
         FILETIME idleTime{}, kernelTime{}, userTime{};
 
@@ -59,6 +64,53 @@ struct SystemMetrics
     }
 
 private:
+    // Matches the documented PROCESSOR_POWER_INFORMATION memory layout.
+    struct CorePowerInfo
+    {
+        ULONG number;
+        ULONG maxMhz;
+        ULONG currentMhz;
+        ULONG mhzLimit;
+        ULONG maxIdleState;
+        ULONG currentIdleState;
+    };
+
+    void RefreshFrequency()
+    {
+        CpuFrequencyMhz = -1;
+        const DWORD cores = GetActiveProcessorCount(ALL_PROCESSOR_GROUPS);
+
+        if (cores == 0 || cores > 512)
+            return;
+
+        if (coreInfo_.size() != cores)
+            coreInfo_.resize(cores);
+
+        const LONG status = CallNtPowerInformation(
+            ProcessorInformation, nullptr, 0, coreInfo_.data(),
+            static_cast<ULONG>(coreInfo_.size() * sizeof(CorePowerInfo)));
+
+        if (status != 0)
+            return;
+
+        std::uint64_t totalMhz = 0;
+        unsigned int usableCores = 0;
+
+        for (const auto& core : coreInfo_)
+        {
+            if (core.currentMhz > 0 && core.currentMhz < 15000)
+            {
+                totalMhz += core.currentMhz;
+                ++usableCores;
+            }
+        }
+
+        if (usableCores)
+            CpuFrequencyMhz = static_cast<int>(totalMhz / usableCores);
+    }
+
+    std::vector<CorePowerInfo> coreInfo_;
+
     static std::uint64_t ToTicks(const FILETIME& time)
     {
         return (static_cast<std::uint64_t>(time.dwHighDateTime) << 32)

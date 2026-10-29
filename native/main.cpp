@@ -7,9 +7,11 @@
 #include <cwchar>
 #include <cstring>
 #include "system_metrics.h"
+#include "gpu_metrics.h"
 #include "fps_reader.h"
 
 SystemMetrics metrics;
+GpuMetrics gpuMetrics;
 FpsReader fpsReader;
 HFONT overlayFont = nullptr;
 
@@ -19,7 +21,8 @@ constexpr int DiagnosticsHotkey = 3;
 
 void CopyFpsDiagnostics(HWND window)
 {
-    const std::wstring report = fpsReader.Diagnostics();
+    const std::wstring report = fpsReader.Diagnostics() +
+        L"\r\n\r\n" + gpuMetrics.Diagnostics();
     bool copied = false;
 
     if (OpenClipboard(window))
@@ -82,6 +85,8 @@ LRESULT CALLBACK WindowProc(HWND window, UINT message, WPARAM wp, LPARAM lp)
         wchar_t cpuText[16];
         wchar_t ramText[16];
         wchar_t fpsText[16];
+        wchar_t gpuText[40];
+        wchar_t vramText[16];
 
         DWORD foregroundPid = 0;
         GetWindowThreadProcessId(GetForegroundWindow(), &foregroundPid);
@@ -100,7 +105,10 @@ LRESULT CALLBACK WindowProc(HWND window, UINT message, WPARAM wp, LPARAM lp)
                    hour, time.wMinute, time.wSecond,
                    time.wHour >= 12 ? L"PM" : L"AM");
 
-        if (metrics.CpuPercent >= 0)
+        if (metrics.CpuPercent >= 0 && metrics.CpuFrequencyMhz >= 0)
+            swprintf_s(cpuText, L"%d%% %dMHz",
+                       metrics.CpuPercent, metrics.CpuFrequencyMhz);
+        else if (metrics.CpuPercent >= 0)
             swprintf_s(cpuText, L"%d%%", metrics.CpuPercent);
         else
             wcscpy_s(cpuText, L"--");
@@ -109,6 +117,21 @@ LRESULT CALLBACK WindowProc(HWND window, UINT message, WPARAM wp, LPARAM lp)
             swprintf_s(ramText, L"%d%%", metrics.RamPercent);
         else
             wcscpy_s(ramText, L"--");
+
+        if (gpuMetrics.UsagePercent >= 0 && gpuMetrics.TemperatureC >= 0)
+            swprintf_s(gpuText, L"%d%% %d\u00B0C",
+                       gpuMetrics.UsagePercent, gpuMetrics.TemperatureC);
+        else if (gpuMetrics.UsagePercent >= 0)
+            swprintf_s(gpuText, L"%d%%", gpuMetrics.UsagePercent);
+        else if (gpuMetrics.TemperatureC >= 0)
+            swprintf_s(gpuText, L"%d\u00B0C", gpuMetrics.TemperatureC);
+        else
+            wcscpy_s(gpuText, L"--");
+
+        if (gpuMetrics.VramPercent >= 0)
+            swprintf_s(vramText, L"%d%%", gpuMetrics.VramPercent);
+        else
+            wcscpy_s(vramText, L"--");
 
         if (!overlayFont)
             overlayFont = CreateFontW(
@@ -147,6 +170,8 @@ LRESULT CALLBACK WindowProc(HWND window, UINT message, WPARAM wp, LPARAM lp)
         DrawMetric(L"FPS", fpsText);
         DrawMetric(L"Time", timeText);
         DrawMetric(L"CPU", cpuText);
+        DrawMetric(L"GPU", gpuText);
+        DrawMetric(L"VRAM", vramText);
         DrawMetric(L"RAM", ramText);
 
         // Each metric updates x with its measured text width. Expand the
@@ -179,6 +204,7 @@ LRESULT CALLBACK WindowProc(HWND window, UINT message, WPARAM wp, LPARAM lp)
         if (now - lastMetricsTick >= 1000)
         {
             metrics.Refresh();
+            gpuMetrics.Refresh();
             lastMetricsTick = now;
         }
 
@@ -251,6 +277,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int)
                    MOD_CONTROL | MOD_SHIFT | MOD_NOREPEAT, 'D');
 
     metrics.Refresh();
+    gpuMetrics.Start();
     DWORD initialPid = 0;
     GetWindowThreadProcessId(GetForegroundWindow(), &initialPid);
     fpsReader.SetTarget(initialPid);
@@ -266,5 +293,6 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int)
     }
 
     fpsReader.Stop();
+    gpuMetrics.Shutdown();
     return 0;
 }
