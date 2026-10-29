@@ -1,21 +1,17 @@
-version: 0.2.{build}
+
+version: 0.3.{build}-dev
 image: Visual Studio 2022
 configuration: Release
 platform: x64
 
 build_script:
-  - cmd: dotnet publish src\LSVJOverlay.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=None -p:DebugSymbols=false -o publish-standalone
-  - cmd: dotnet publish src\LSVJOverlay.csproj -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true -p:DebugType=None -p:DebugSymbols=false -o publish-small
+  - cmd: call native\build.cmd
 
 after_build:
-  - ps: foreach ($dir in @('publish-standalone', 'publish-small')) { Copy-Item LICENSE "$dir\LICENSE" -Force; Copy-Item THIRD-PARTY-NOTICES.md "$dir\THIRD-PARTY-NOTICES.md" -Force; Copy-Item LICENSES "$dir\LICENSES" -Recurse -Force }
-  - ps: Compress-Archive -Path .\publish-standalone\* -DestinationPath .\GameOverlay-standalone-win-x64.zip -Force
-  - ps: Compress-Archive -Path .\publish-small\* -DestinationPath .\GameOverlay-small-win-x64.zip -Force
+  - ps: Compress-Archive -Path build-native\GameOverlayDev.exe, LICENSE -DestinationPath GameOverlay-native-dev-win-x64.zip -Force
 
 test: off
 
 artifacts:
-  - path: GameOverlay-standalone-win-x64.zip
-    name: GameOverlay-standalone-win-x64
-  - path: GameOverlay-small-win-x64.zip
-    name: GameOverlay-small-win-x64
+  - path: GameOverlay-native-dev-win-x64.zip
+    name: GameOverlay-native-dev-win-x64
