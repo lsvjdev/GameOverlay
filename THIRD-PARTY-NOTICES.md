@@ -37,3 +37,11 @@ RivaTuner Statistics Server is a separate installation. LSVJ Overlay communicate
 Keep the GPL license, the applicable third-party notices, and the corresponding source for the version being distributed. For official releases, tag the matching source commit.
 
 LSVJ Overlay is not affiliated with or endorsed by Razer, MSI, or RTSS's developers.
+
+## Native development build
+
+The native development ZIP includes Intel PresentMon 2.4.1 and the signed
+AMDFamily17 module from PawnIO.Modules 0.2.11. PawnIO.Modules is
+LGPL-2.1-or-later; the package includes its license and corresponding
+source link. The PawnIO driver and PawnIOLib.dll are not distributed
+with Game Overlay. CPU temperature requires the user to install PawnIO.

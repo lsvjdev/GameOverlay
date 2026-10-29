@@ -8,10 +8,12 @@
 #include <cstring>
 #include "system_metrics.h"
 #include "gpu_metrics.h"
+#include "cpu_temperature.h"
 #include "fps_reader.h"
 
 SystemMetrics metrics;
 GpuMetrics gpuMetrics;
+CpuTemperature cpuTemperature;
 FpsReader fpsReader;
 HFONT overlayFont = nullptr;
 
@@ -22,7 +24,8 @@ constexpr int DiagnosticsHotkey = 3;
 void CopyFpsDiagnostics(HWND window)
 {
     const std::wstring report = fpsReader.Diagnostics() +
-        L"\r\n\r\n" + gpuMetrics.Diagnostics();
+        L"\r\n\r\n" + gpuMetrics.Diagnostics() +
+        L"\r\n\r\n" + cpuTemperature.Diagnostics();
     bool copied = false;
 
     if (OpenClipboard(window))
@@ -82,7 +85,7 @@ LRESULT CALLBACK WindowProc(HWND window, UINT message, WPARAM wp, LPARAM lp)
         GetLocalTime(&time);
 
         wchar_t timeText[32];
-        wchar_t cpuText[16];
+        wchar_t cpuText[40];
         wchar_t ramText[16];
         wchar_t fpsText[16];
         wchar_t gpuText[40];
@@ -105,9 +108,16 @@ LRESULT CALLBACK WindowProc(HWND window, UINT message, WPARAM wp, LPARAM lp)
                    hour, time.wMinute, time.wSecond,
                    time.wHour >= 12 ? L"PM" : L"AM");
 
-        if (metrics.CpuPercent >= 0 && metrics.CpuFrequencyMhz >= 0)
+        if (metrics.CpuPercent >= 0 && cpuTemperature.Celsius >= 0 &&
+            metrics.CpuFrequencyMhz >= 0)
+            swprintf_s(cpuText, L"%d%% %d\u00B0C %dMHz",
+                metrics.CpuPercent, cpuTemperature.Celsius, metrics.CpuFrequencyMhz);
+        else if (metrics.CpuPercent >= 0 && cpuTemperature.Celsius >= 0)
+            swprintf_s(cpuText, L"%d%% %d\u00B0C",
+                metrics.CpuPercent, cpuTemperature.Celsius);
+        else if (metrics.CpuPercent >= 0 && metrics.CpuFrequencyMhz >= 0)
             swprintf_s(cpuText, L"%d%% %dMHz",
-                       metrics.CpuPercent, metrics.CpuFrequencyMhz);
+                metrics.CpuPercent, metrics.CpuFrequencyMhz);
         else if (metrics.CpuPercent >= 0)
             swprintf_s(cpuText, L"%d%%", metrics.CpuPercent);
         else
@@ -205,6 +215,7 @@ LRESULT CALLBACK WindowProc(HWND window, UINT message, WPARAM wp, LPARAM lp)
         {
             metrics.Refresh();
             gpuMetrics.Refresh();
+            cpuTemperature.Refresh();
             lastMetricsTick = now;
         }
 
@@ -278,6 +289,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int)
 
     metrics.Refresh();
     gpuMetrics.Start();
+    cpuTemperature.Start();
     DWORD initialPid = 0;
     GetWindowThreadProcessId(GetForegroundWindow(), &initialPid);
     fpsReader.SetTarget(initialPid);
@@ -294,5 +306,6 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int)
 
     fpsReader.Stop();
     gpuMetrics.Shutdown();
+    cpuTemperature.Shutdown();
     return 0;
 }

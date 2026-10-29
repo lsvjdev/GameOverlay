@@ -50,6 +50,18 @@ if errorlevel 1 (
 )
 
 GpuPercentageTests.exe
+if errorlevel 1 (
+    popd
+    exit /b 1
+)
+
+cl /nologo /std:c++20 /O2 /W4 /EHsc "%~dp0tests\cpu_temperature_tests.cpp" /Fe:CpuTemperatureTests.exe
+if errorlevel 1 (
+    popd
+    exit /b 1
+)
+
+CpuTemperatureTests.exe
 set "RESULT=%ERRORLEVEL%"
 popd
 

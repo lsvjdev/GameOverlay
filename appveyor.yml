@@ -22,7 +22,37 @@ build_script:
       Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/GameTechDev/PresentMon/v2.4.1/LICENSE.txt' -OutFile 'build-native\PresentMon-LICENSE.txt'
 
 after_build:
-  - ps: Compress-Archive -Path build-native\GameOverlayDev.exe, build-native\PresentMon-2.4.1-x64.exe, build-native\PresentMon-LICENSE.txt, LICENSE -DestinationPath GameOverlay-native-dev-win-x64.zip -Force
+  - ps: |
+      $ErrorActionPreference = 'Stop'
+      $url = 'https://github.com/namazso/PawnIO.Modules/releases/download/0.2.11/release_0_2_11.zip'
+      $archive = 'build-native\pawnio-modules.zip'
+      Invoke-WebRequest -Uri $url -OutFile $archive
+
+      $expected = '43608cb89bc84247fef1368a139013f7d043e17db6d6c8dfc9b46bf0905a81f4'
+      $actual = (Get-FileHash $archive -Algorithm SHA256).Hash.ToLowerInvariant()
+      if ($actual -ne $expected) {
+          throw 'PawnIO module archive checksum verification failed.'
+      }
+
+      $unpack = 'build-native\pawnio-module-source'
+      Expand-Archive -Path $archive -DestinationPath $unpack -Force
+      $module = Get-ChildItem $unpack -Filter 'AMDFamily17.bin' -File -Recurse | Select-Object -First 1
+      if (-not $module) {
+          throw 'AMDFamily17.bin not found in official PawnIO Modules archive.'
+      }
+
+      New-Item -ItemType Directory -Path 'build-native\modules' -Force | Out-Null
+      Copy-Item $module.FullName 'build-native\modules\AMDFamily17.bin'
+      Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/namazso/PawnIO.Modules/0.2.11/COPYING' -OutFile 'build-native\PawnIO-Modules-LICENSE.txt'
+      @'
+PawnIO.Modules AMDFamily17.bin, version 0.2.11
+Copyright (C) namazso and contributors
+License: LGPL-2.1-or-later
+Corresponding source: https://github.com/namazso/PawnIO.Modules/tree/0.2.11
+The PawnIO driver and PawnIOLib.dll are not bundled.
+'@ | Set-Content 'build-native\PawnIO-Modules-SOURCE.txt' -Encoding UTF8
+
+  - ps: Compress-Archive -Path build-native\GameOverlayDev.exe, build-native\PresentMon-2.4.1-x64.exe, build-native\PresentMon-LICENSE.txt, build-native\modules, build-native\PawnIO-Modules-LICENSE.txt, build-native\PawnIO-Modules-SOURCE.txt, LICENSE -DestinationPath GameOverlay-native-dev-win-x64.zip -Force
 
 test: off
 
