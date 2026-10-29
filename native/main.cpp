@@ -11,6 +11,7 @@
 
 SystemMetrics metrics;
 FpsReader fpsReader;
+HFONT overlayFont = nullptr;
 
 constexpr int ToggleHotkey = 1;
 constexpr int ExitHotkey = 2;
@@ -109,13 +110,14 @@ LRESULT CALLBACK WindowProc(HWND window, UINT message, WPARAM wp, LPARAM lp)
         else
             wcscpy_s(ramText, L"--");
 
-        HFONT font = CreateFontW(
-            -16, 0, 0, 0, FW_SEMIBOLD, FALSE, FALSE, FALSE,
-            DEFAULT_CHARSET, OUT_DEFAULT_PRECIS,
-            CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY,
-            DEFAULT_PITCH, L"Segoe UI");
+        if (!overlayFont)
+            overlayFont = CreateFontW(
+                -16, 0, 0, 0, FW_SEMIBOLD, FALSE, FALSE, FALSE,
+                DEFAULT_CHARSET, OUT_DEFAULT_PRECIS,
+                CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY,
+                DEFAULT_PITCH, L"Segoe UI");
 
-        HGDIOBJ previous = SelectObject(dc, font);
+        HGDIOBJ previous = SelectObject(dc, overlayFont);
         SetBkMode(dc, TRANSPARENT);
 
         int x = 10;
@@ -152,7 +154,6 @@ LRESULT CALLBACK WindowProc(HWND window, UINT message, WPARAM wp, LPARAM lp)
         const int requiredWidth = x - 16 + 10;
 
         SelectObject(dc, previous);
-        DeleteObject(font);
         EndPaint(window, &paint);
 
         if (requiredWidth > area.right)
@@ -171,7 +172,16 @@ LRESULT CALLBACK WindowProc(HWND window, UINT message, WPARAM wp, LPARAM lp)
         GetWindowThreadProcessId(GetForegroundWindow(), &foregroundPid);
 
         fpsReader.SetTarget(foregroundPid);
-        metrics.Refresh();
+
+        // Check foreground games twice a second; hardware usage once a second.
+        static ULONGLONG lastMetricsTick = 0;
+        const ULONGLONG now = GetTickCount64();
+        if (now - lastMetricsTick >= 1000)
+        {
+            metrics.Refresh();
+            lastMetricsTick = now;
+        }
+
         InvalidateRect(window, nullptr, FALSE);
         return 0;
     }
@@ -188,6 +198,11 @@ LRESULT CALLBACK WindowProc(HWND window, UINT message, WPARAM wp, LPARAM lp)
 
     case WM_DESTROY:
         KillTimer(window, 1);
+        if (overlayFont)
+        {
+            DeleteObject(overlayFont);
+            overlayFont = nullptr;
+        }
         UnregisterHotKey(window, ToggleHotkey);
         UnregisterHotKey(window, ExitHotkey);
         UnregisterHotKey(window, DiagnosticsHotkey);
@@ -236,8 +251,11 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int)
                    MOD_CONTROL | MOD_SHIFT | MOD_NOREPEAT, 'D');
 
     metrics.Refresh();
+    DWORD initialPid = 0;
+    GetWindowThreadProcessId(GetForegroundWindow(), &initialPid);
+    fpsReader.SetTarget(initialPid);
     fpsReader.Start();
-    SetTimer(window, 1, 1000, nullptr);
+    SetTimer(window, 1, 500, nullptr);
     ShowWindow(window, SW_SHOWNOACTIVATE);
 
     MSG message;

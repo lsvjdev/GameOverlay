@@ -3,12 +3,16 @@
 
 #include <windows.h>
 #include <atomic>
+#include <charconv>
 #include <cmath>
-#include <cstdlib>
+#include <cstdint>
 #include <mutex>
+#include <psapi.h>
 #include <string>
+#include <string_view>
 #include <thread>
-#include <vector>
+#include <unordered_map>
+#include "frame_window.h"
 
 class FpsReader
 {
@@ -55,15 +59,22 @@ public:
 
     void SetTarget(DWORD processId)
     {
-        targetPid_.store(processId);
+        // Drop the last displayed game's FPS immediately after an Alt+Tab.
+        if (targetPid_.exchange(processId) != processId)
+        {
+            currentFps_.store(-1);
+            reportedPid_.store(0);
+            lastFrame_.store(0);
+        }
     }
 
     int GetFps(DWORD processId) const
     {
-        if (processId == 0 || processId != reportedPid_.load())
+        if (processId == 0 || processId != targetPid_.load() ||
+            processId != reportedPid_.load())
             return -1;
 
-        if (GetTickCount64() - lastFrame_.load() > 2500)
+        if (GetTickCount64() - lastFrame_.load() > 1500)
             return -1;
 
         return currentFps_.load();
@@ -102,6 +113,26 @@ public:
         report += L"\r\nValid FPS samples: " + std::to_wstring(validSamples_.load());
         report += L"\r\nLaunch Win32 error: " + std::to_wstring(launchError_.load());
         report += L"\r\nPipe Win32 error: " + std::to_wstring(pipeError_.load());
+        report += L"\r\nActive swap chains: " + std::to_wstring(activeSwapChains_.load());
+        report += L"\r\nSelected swap chain: " + std::to_wstring(selectedSwapChain_.load());
+
+        report += ProcessUsage(GetCurrentProcess(), L"Overlay");
+        {
+            std::lock_guard<std::mutex> lock(processMutex_);
+            if (process_ != nullptr)
+                report += ProcessUsage(process_, L"PresentMon");
+        }
+
+        HANDLE foregroundHandle = OpenProcess(
+            PROCESS_QUERY_LIMITED_INFORMATION, FALSE, foreground);
+        if (foregroundHandle)
+        {
+            wchar_t name[MAX_PATH]{};
+            DWORD length = MAX_PATH;
+            if (QueryFullProcessImageNameW(foregroundHandle, 0, name, &length))
+                report += L"\r\nForeground EXE: " + std::wstring(name, length);
+            CloseHandle(foregroundHandle);
+        }
 
         if (lastFrame_.load() != 0)
             report += L"\r\nLast FPS frame age (ms): "
@@ -126,166 +157,277 @@ public:
 
         stopping_.store(true);
 
+        // Ask PresentMon to stop ETW first so it can release its session.
+        if (launched_.load())
+            StopSession();
+
         {
             std::lock_guard<std::mutex> lock(processMutex_);
-
-            if (process_ != nullptr)
+            if (process_ && WaitForSingleObject(process_, 300) == WAIT_TIMEOUT)
                 TerminateProcess(process_, 0);
         }
 
         worker_.join();
-
-        if (launched_)
-            StopSession();
     }
 
 private:
-    static std::vector<std::string> SplitCsv(const std::string& line)
+    static std::uint64_t Ticks(const FILETIME& time)
     {
-        std::vector<std::string> fields;
-        std::string field;
+        return (static_cast<std::uint64_t>(time.dwHighDateTime) << 32) |
+               time.dwLowDateTime;
+    }
+
+    static std::wstring ProcessUsage(HANDLE process, const wchar_t* label)
+    {
+        std::wstring result;
+        PROCESS_MEMORY_COUNTERS memory{};
+        if (GetProcessMemoryInfo(process, &memory, sizeof(memory)))
+            result += L"\r\n" + std::wstring(label) + L" working set (KB): " +
+                std::to_wstring(memory.WorkingSetSize / 1024);
+
+        FILETIME created{}, exited{}, kernel{}, user{}, now{};
+        if (GetProcessTimes(process, &created, &exited, &kernel, &user))
+        {
+            GetSystemTimeAsFileTime(&now);
+            const auto lifetime = Ticks(now) > Ticks(created)
+                ? Ticks(now) - Ticks(created) : 0;
+            const auto busy = Ticks(kernel) + Ticks(user);
+            DWORD cores = GetActiveProcessorCount(ALL_PROCESSOR_GROUPS);
+            if (lifetime && cores)
+            {
+                double average = 100.0 * static_cast<double>(busy) /
+                                 (static_cast<double>(lifetime) * cores);
+                result += L"\r\n" + std::wstring(label) +
+                    L" average CPU (%) since launch: " +
+                    std::to_wstring(static_cast<int>(std::lround(average)));
+            }
+        }
+        return result;
+    }
+
+    // Read a single CSV field without splitting every column into allocations.
+    static std::string_view CsvField(std::string_view line, int requested)
+    {
+        int column = 0;
+        size_t start = 0;
         bool quoted = false;
 
-        for (size_t i = 0; i < line.size(); ++i)
+        for (size_t i = 0; i <= line.size(); ++i)
         {
-            char ch = line[i];
+            const char ch = i < line.size() ? line[i] : ',';
 
-            if (ch == '"')
+            if (ch == '"' && i < line.size())
             {
                 if (quoted && i + 1 < line.size() && line[i + 1] == '"')
                 {
-                    field += '"';
                     ++i;
+                    continue;
                 }
-                else
+                quoted = !quoted;
+            }
+            else if ((ch == ',' && !quoted) || i == line.size())
+            {
+                if (column == requested)
                 {
-                    quoted = !quoted;
+                    auto value = line.substr(start, i - start);
+                    if (value.size() > 1 && value.front() == '"' && value.back() == '"')
+                    {
+                        value.remove_prefix(1);
+                        value.remove_suffix(1);
+                    }
+                    return value;
                 }
-            }
-            else if (ch == ',' && !quoted)
-            {
-                fields.push_back(field);
-                field.clear();
-            }
-            else if (ch != '\r')
-            {
-                field += ch;
+                start = i + 1;
+                ++column;
             }
         }
-
-        fields.push_back(field);
-        return fields;
+        return {};
     }
+
+    struct SwapChain
+    {
+        FrameWindow window;
+        ULONGLONG lastSeen = 0;
+    };
 
     void ReadFrames(HANDLE pipe)
     {
         std::string pending;
-        char buffer[8192];
+        pending.reserve(32768);
+        char buffer[32768]{};
 
         int pidColumn = -1;
+        int swapColumn = -1;
         int intervalColumn = -1;
         int previewLines = 0;
-        DWORD smoothedPid = 0;
-        double smoothedFps = 0;
+        DWORD activePid = 0;
+        std::uint64_t chosenChain = 0;
+        std::unordered_map<std::uint64_t, SwapChain> chains;
+        chains.reserve(8);
 
         while (!stopping_.load())
         {
             DWORD received = 0;
-
             if (!ReadFile(pipe, buffer, sizeof(buffer), &received, nullptr))
             {
                 pipeError_.store(GetLastError());
                 break;
             }
-
             if (received == 0)
                 break;
 
             pending.append(buffer, received);
-
+            size_t offset = 0;
             size_t newline;
 
-            while ((newline = pending.find('\n')) != std::string::npos)
+            while ((newline = pending.find('\n', offset)) != std::string::npos)
             {
-                std::string line = pending.substr(0, newline);
-                pending.erase(0, newline + 1);
+                std::string_view line(pending.data() + offset, newline - offset);
+                offset = newline + 1;
                 streamLines_.fetch_add(1, std::memory_order_relaxed);
 
-                // Keep just the first few lines in RAM for troubleshooting.
                 if (previewLines++ < 5)
                 {
                     std::lock_guard<std::mutex> lock(diagnosticsMutex_);
-                    firstOutput_ += line.substr(0, 200) + "\r\n";
+                    firstOutput_ += std::string(line.substr(0, 200)) + "\r\n";
                 }
 
-                auto fields = SplitCsv(line);
-
-                if (pidColumn < 0 || intervalColumn < 0)
+                if (pidColumn < 0 || swapColumn < 0 || intervalColumn < 0)
                 {
-                    pidColumn = -1;
-                    intervalColumn = -1;
-
-                    for (size_t i = 0; i < fields.size(); ++i)
+                    for (int column = 0; column < 32; ++column)
                     {
-                        if (fields[i] == "ProcessID")
-                            pidColumn = static_cast<int>(i);
-
-                        if (fields[i] == "MsBetweenPresents")
-                            intervalColumn = static_cast<int>(i);
+                        const auto field = CsvField(line, column);
+                        if (field.empty())
+                            break;
+                        if (field == "ProcessID") pidColumn = column;
+                        if (field == "SwapChainAddress") swapColumn = column;
+                        if (field == "MsBetweenPresents") intervalColumn = column;
                     }
-
-                    if (pidColumn >= 0 && intervalColumn >= 0)
+                    if (pidColumn >= 0 && swapColumn >= 0 && intervalColumn >= 0)
                         headerFound_.store(true);
-
                     continue;
                 }
 
-                if (static_cast<int>(fields.size()) <= pidColumn ||
-                    static_cast<int>(fields.size()) <= intervalColumn)
-                    continue;
+                DWORD desiredPid = targetPid_.load(std::memory_order_relaxed);
+                if (desiredPid != activePid)
+                {
+                    chains.clear();
+                    activePid = desiredPid;
+                    chosenChain = 0;
+                    selectedSwapChain_.store(0);
+                    activeSwapChains_.store(0);
+                }
 
-                char* pidEnd = nullptr;
-                char* intervalEnd = nullptr;
-
-                unsigned long pid = std::strtoul(
-                    fields[pidColumn].c_str(), &pidEnd, 10);
-
-                double milliseconds = std::strtod(
-                    fields[intervalColumn].c_str(), &intervalEnd);
-
-                if (*pidEnd != '\0' || *intervalEnd != '\0')
+                const auto pidField = CsvField(line, pidColumn);
+                DWORD pid = 0;
+                auto pidResult = std::from_chars(
+                    pidField.data(), pidField.data() + pidField.size(), pid);
+                if (pidResult.ec != std::errc{} ||
+                    pidResult.ptr != pidField.data() + pidField.size())
                     continue;
 
                 parsedRows_.fetch_add(1, std::memory_order_relaxed);
-                lastCsvPid_.store(static_cast<DWORD>(pid));
+                lastCsvPid_.store(pid);
 
-                if (pid == 0 || pid != targetPid_.load())
+                if (pid == 0 || pid != desiredPid)
                     continue;
 
                 targetRows_.fetch_add(1, std::memory_order_relaxed);
 
-                if (!std::isfinite(milliseconds) ||
-                    milliseconds <= 1 || milliseconds > 1000)
+                auto swap = CsvField(line, swapColumn);
+                if (swap.starts_with("0x") || swap.starts_with("0X"))
+                    swap.remove_prefix(2);
+
+                std::uint64_t address = 0;
+                auto addressResult = std::from_chars(
+                    swap.data(), swap.data() + swap.size(), address, 16);
+                if (addressResult.ec != std::errc{} ||
+                    addressResult.ptr != swap.data() + swap.size())
                     continue;
 
-                double instantFps = 1000.0 / milliseconds;
+                const auto interval = CsvField(line, intervalColumn);
+                double milliseconds = 0;
+                auto valueResult = std::from_chars(
+                    interval.data(), interval.data() + interval.size(),
+                    milliseconds, std::chars_format::general);
+                if (valueResult.ec != std::errc{} ||
+                    valueResult.ptr != interval.data() + interval.size())
+                    continue;
 
-                if (pid != smoothedPid ||
-                    GetTickCount64() - lastFrame_.load() > 2500)
+                const ULONGLONG now = GetTickCount64();
+                if (!chains.contains(address) && chains.size() >= 8)
                 {
-                    smoothedFps = instantFps;
-                    smoothedPid = static_cast<DWORD>(pid);
-                }
-                else
-                {
-                    smoothedFps = smoothedFps * 0.85 + instantFps * 0.15;
+                    // Keep a bounded number of swap chains per foreground game.
+                    auto oldest = chains.begin();
+                    for (auto it = chains.begin(); it != chains.end(); ++it)
+                        if (it->second.lastSeen < oldest->second.lastSeen)
+                            oldest = it;
+                    chains.erase(oldest);
                 }
 
-                currentFps_.store(static_cast<int>(std::lround(smoothedFps)));
+                auto& chain = chains[address];
+                if (now - chain.lastSeen > 1500)
+                    chain.window = FrameWindow{};
+
+                if (!chain.window.Add(milliseconds))
+                    continue;
+
+                chain.lastSeen = now;
                 validSamples_.fetch_add(1, std::memory_order_relaxed);
-                reportedPid_.store(static_cast<DWORD>(pid));
-                lastFrame_.store(GetTickCount64());
+
+                std::uint64_t bestAddress = 0;
+                size_t bestCount = 0;
+                int bestFps = -1;
+                ULONGLONG bestSeen = 0;
+
+                for (const auto& [id, candidate] : chains)
+                {
+                    if (now - candidate.lastSeen > 1500)
+                        continue;
+                    int candidateFps = candidate.window.Fps();
+                    if (candidateFps < 0)
+                        continue;
+
+                    size_t count = candidate.window.Samples();
+                    // Retain the previous chain unless another is noticeably busier.
+                    if (count > bestCount ||
+                        (count == bestCount && id == chosenChain))
+                    {
+                        bestAddress = id;
+                        bestCount = count;
+                        bestFps = candidateFps;
+                        bestSeen = candidate.lastSeen;
+                    }
+                }
+
+                if (chosenChain && chains.contains(chosenChain))
+                {
+                    const auto& previous = chains.at(chosenChain);
+                    if (now - previous.lastSeen <= 1500 &&
+                        previous.window.Fps() >= 0 &&
+                        previous.window.Samples() * 10 >= bestCount * 9)
+                    {
+                        bestAddress = chosenChain;
+                        bestFps = previous.window.Fps();
+                        bestSeen = previous.lastSeen;
+                    }
+                }
+
+                chosenChain = bestAddress;
+                activeSwapChains_.store(static_cast<unsigned>(chains.size()));
+                selectedSwapChain_.store(bestAddress);
+
+                if (bestFps >= 0)
+                {
+                    currentFps_.store(bestFps);
+                    reportedPid_.store(pid);
+                    lastFrame_.store(bestSeen);
+                }
             }
+
+            // One erase per pipe read rather than reallocating for every frame.
+            if (offset)
+                pending.erase(0, offset);
 
             if (pending.size() > 65536)
                 pending.clear();
@@ -346,6 +488,26 @@ private:
                 {
                     process_ = info.hProcess;
                     launchState_.store(2);
+
+                    // The job kills the child if the overlay crashes or exits.
+                    HANDLE job = CreateJobObjectW(nullptr, nullptr);
+                    if (job)
+                    {
+                        JOBOBJECT_EXTENDED_LIMIT_INFORMATION limits{};
+                        limits.BasicLimitInformation.LimitFlags =
+                            JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
+                        if (SetInformationJobObject(
+                            job, JobObjectExtendedLimitInformation,
+                            &limits, sizeof(limits)) &&
+                            AssignProcessToJobObject(job, info.hProcess))
+                        {
+                            job_ = job;
+                        }
+                        else
+                        {
+                            CloseHandle(job);
+                        }
+                    }
                 }
                 else
                 {
@@ -383,6 +545,11 @@ private:
                 exitCode_.store(code);
 
             process_ = nullptr;
+            if (job_)
+            {
+                CloseHandle(job_);
+                job_ = nullptr;
+            }
         }
 
         launchState_.store(3);
@@ -416,10 +583,11 @@ private:
     std::wstring executable_;
     std::wstring session_;
     std::thread worker_;
-    std::mutex processMutex_;
+    mutable std::mutex processMutex_;
 
     HANDLE process_ = nullptr;
-    bool launched_ = false;
+    HANDLE job_ = nullptr;
+    std::atomic<bool> launched_{false};
 
     std::atomic<bool> stopping_{false};
     std::atomic<DWORD> targetPid_{0};
@@ -439,4 +607,6 @@ private:
     std::atomic<unsigned long long> parsedRows_{0};
     std::atomic<unsigned long long> targetRows_{0};
     std::atomic<unsigned long long> validSamples_{0};
+    std::atomic<unsigned> activeSwapChains_{0};
+    std::atomic<std::uint64_t> selectedSwapChain_{0};
 };
