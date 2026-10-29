@@ -1,6 +1,6 @@
 
- // SPDX-License-Identifier: GPL-3.0-only
- // Copyright (c) 2026 lsvjdev
+# SPDX-License-Identifier: GPL-3.0-only
+// Copyright (c) 2026 lsvjdev
 
 #include <windows.h>
 #include <cstdio>
@@ -47,6 +47,7 @@ LRESULT CALLBACK WindowProc(HWND window, UINT message, WPARAM wp, LPARAM lp)
             swprintf_s(fpsText, L"%d", fps);
         else
             wcscpy_s(fpsText, L"--");
+
         int hour = time.wHour % 12;
         if (hour == 0) hour = 12;
 
@@ -108,16 +109,16 @@ LRESULT CALLBACK WindowProc(HWND window, UINT message, WPARAM wp, LPARAM lp)
         return 0;
     }
 
-        case WM_TIMER:
-        {
-            DWORD foregroundPid = 0;
-            GetWindowThreadProcessId(GetForegroundWindow(), &foregroundPid);
+    case WM_TIMER:
+    {
+        DWORD foregroundPid = 0;
+        GetWindowThreadProcessId(GetForegroundWindow(), &foregroundPid);
 
-            fpsReader.SetTarget(foregroundPid);
-            metrics.Refresh();
-            InvalidateRect(window, nullptr, FALSE);
-            return 0;
-        }
+        fpsReader.SetTarget(foregroundPid);
+        metrics.Refresh();
+        InvalidateRect(window, nullptr, FALSE);
+        return 0;
+    }
 
     case WM_HOTKEY:
         if (wp == ToggleHotkey)

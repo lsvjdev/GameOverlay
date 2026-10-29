@@ -7,7 +7,7 @@ platform: x64
 build_script:
   - cmd: call native\build.cmd
   - ps: |
-      rrorActionPreference = 'Stop'
+      $ErrorActionPreference = 'Stop'
       $url = 'https://github.com/GameTechDev/PresentMon/releases/download/v2.4.1/PresentMon-2.4.1-x64.exe'
       $file = 'build-native\PresentMon-2.4.1-x64.exe'
       Invoke-WebRequest -Uri $url -OutFile $file
