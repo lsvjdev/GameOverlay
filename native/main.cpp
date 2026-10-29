@@ -2,120 +2,166 @@
  // SPDX-License-Identifier: GPL-3.0-only
  // Copyright (c) 2026 lsvjdev
 
- #include <windows.h>
- #include <cstdio>
+#include <windows.h>
+#include <cstdio>
+#include <cwchar>
+#include "system_metrics.h"
 
- constexpr int ToggleHotkey = 1;
- constexpr int ExitHotkey = 2;
+SystemMetrics metrics;
 
- LRESULT CALLBACK WindowProc(HWND window, UINT message, WPARAM wp, LPARAM lp)
- {
-     switch (message)
-     {
-     case WM_PAINT:
-     {
-         PAINTSTRUCT paint;
-         HDC dc = BeginPaint(window, &paint);
+constexpr int ToggleHotkey = 1;
+constexpr int ExitHotkey = 2;
 
-         RECT area;
-         GetClientRect(window, &area);
+LRESULT CALLBACK WindowProc(HWND window, UINT message, WPARAM wp, LPARAM lp)
+{
+    switch (message)
+    {
+    case WM_PAINT:
+    {
+        PAINTSTRUCT paint;
+        HDC dc = BeginPaint(window, &paint);
 
-         HBRUSH background = CreateSolidBrush(RGB(24, 25, 28));
-         FillRect(dc, &area, background);
-         DeleteObject(background);
+        RECT area;
+        GetClientRect(window, &area);
 
-         SYSTEMTIME time;
-         GetLocalTime(&time);
+        HBRUSH background = CreateSolidBrush(RGB(24, 25, 28));
+        FillRect(dc, &area, background);
+        DeleteObject(background);
 
-         wchar_t text[128];
-         swprintf_s(text, L"GAME OVERLAY DEV   %02d:%02d:%02d",
-                    time.wHour, time.wMinute, time.wSecond);
+        SYSTEMTIME time;
+        GetLocalTime(&time);
 
-         HFONT font = CreateFontW(
-             -16, 0, 0, 0, FW_SEMIBOLD, FALSE, FALSE, FALSE,
-             DEFAULT_CHARSET, OUT_DEFAULT_PRECIS,
-             CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY,
-             DEFAULT_PITCH, L"Segoe UI");
+        wchar_t timeText[32];
+        wchar_t cpuText[16];
+        wchar_t ramText[16];
 
-         HGDIOBJ previous = SelectObject(dc, font);
-         SetBkMode(dc, TRANSPARENT);
-         SetTextColor(dc, RGB(82, 217, 85));
+        int hour = time.wHour % 12;
+        if (hour == 0) hour = 12;
 
-         area.left += 10;
-         DrawTextW(dc, text, -1, &area,
-                   DT_SINGLELINE | DT_VCENTER | DT_LEFT);
+        swprintf_s(timeText, L"%02d:%02d:%02d %ls",
+                   hour, time.wMinute, time.wSecond,
+                   time.wHour >= 12 ? L"PM" : L"AM");
 
-         SelectObject(dc, previous);
-         DeleteObject(font);
-         EndPaint(window, &paint);
-         return 0;
-     }
+        if (metrics.CpuPercent >= 0)
+            swprintf_s(cpuText, L"%d%%", metrics.CpuPercent);
+        else
+            wcscpy_s(cpuText, L"--");
 
-     case WM_TIMER:
-         InvalidateRect(window, nullptr, FALSE);
-         return 0;
+        if (metrics.RamPercent >= 0)
+            swprintf_s(ramText, L"%d%%", metrics.RamPercent);
+        else
+            wcscpy_s(ramText, L"--");
 
-     case WM_HOTKEY:
-         if (wp == ToggleHotkey)
-             ShowWindow(window, IsWindowVisible(window)
-                         ? SW_HIDE : SW_SHOWNOACTIVATE);
-         else if (wp == ExitHotkey)
-             DestroyWindow(window);
-         return 0;
+        HFONT font = CreateFontW(
+            -16, 0, 0, 0, FW_SEMIBOLD, FALSE, FALSE, FALSE,
+            DEFAULT_CHARSET, OUT_DEFAULT_PRECIS,
+            CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY,
+            DEFAULT_PITCH, L"Segoe UI");
 
-     case WM_DESTROY:
-         KillTimer(window, 1);
-         UnregisterHotKey(window, ToggleHotkey);
-         UnregisterHotKey(window, ExitHotkey);
-         PostQuitMessage(0);
-         return 0;
-     }
+        HGDIOBJ previous = SelectObject(dc, font);
+        SetBkMode(dc, TRANSPARENT);
 
-     return DefWindowProcW(window, message, wp, lp);
- }
+        int x = 10;
+        const int y = 5;
 
- int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int)
- {
-     WNDCLASSW cls{};
-     cls.lpfnWndProc = WindowProc;
-     cls.hInstance = instance;
-     cls.lpszClassName = L"GameOverlayNativeDev";
+        auto DrawMetric = [&](const wchar_t* label, const wchar_t* value)
+        {
+            SIZE size{};
 
-     if (!RegisterClassW(&cls))
-         return 1;
+            SetTextColor(dc, RGB(189, 181, 188));
 
-     HWND window = CreateWindowExW(
-         WS_EX_LAYERED | WS_EX_TOPMOST | WS_EX_TOOLWINDOW |
-         WS_EX_TRANSPARENT | WS_EX_NOACTIVATE,
-         cls.lpszClassName, L"Game Overlay Dev",
-         WS_POPUP, 0, 0, 360, 28,
-         nullptr, nullptr, instance, nullptr);
+            int length = lstrlenW(label);
+            TextOutW(dc, x, y, label, length);
+            GetTextExtentPoint32W(dc, label, length, &size);
 
-     if (!window)
-         return 1;
+            x += size.cx + 4;
 
-     SetLayeredWindowAttributes(window, 0, 235, LWA_ALPHA);
+            SetTextColor(dc, RGB(82, 217, 85));
 
-     if (!RegisterHotKey(window, ToggleHotkey,
-                         MOD_CONTROL | MOD_SHIFT | MOD_NOREPEAT, 'O') ||
-         !RegisterHotKey(window, ExitHotkey,
-                         MOD_CONTROL | MOD_SHIFT | MOD_NOREPEAT, 'Q'))
-     {
-         MessageBoxW(nullptr, L"Could not register hotkeys.",
-                     L"Game Overlay Dev", MB_OK | MB_ICONERROR);
-         DestroyWindow(window);
-         return 1;
-     }
+            length = lstrlenW(value);
+            TextOutW(dc, x, y, value, length);
+            GetTextExtentPoint32W(dc, value, length, &size);
 
-     SetTimer(window, 1, 1000, nullptr);
-     ShowWindow(window, SW_SHOWNOACTIVATE);
+            x += size.cx + 16;
+        };
 
-     MSG message;
-     while (GetMessageW(&message, nullptr, 0, 0) > 0)
-     {
-         TranslateMessage(&message);
-         DispatchMessageW(&message);
-     }
+        DrawMetric(L"Time", timeText);
+        DrawMetric(L"CPU", cpuText);
+        DrawMetric(L"RAM", ramText);
 
-     return 0;
- }
+        SelectObject(dc, previous);
+        DeleteObject(font);
+        EndPaint(window, &paint);
+        return 0;
+    }
+
+    case WM_TIMER:
+        metrics.Refresh();
+        InvalidateRect(window, nullptr, FALSE);
+        return 0;
+
+    case WM_HOTKEY:
+        if (wp == ToggleHotkey)
+            ShowWindow(window, IsWindowVisible(window)
+                        ? SW_HIDE : SW_SHOWNOACTIVATE);
+        else if (wp == ExitHotkey)
+            DestroyWindow(window);
+        return 0;
+
+    case WM_DESTROY:
+        KillTimer(window, 1);
+        UnregisterHotKey(window, ToggleHotkey);
+        UnregisterHotKey(window, ExitHotkey);
+        PostQuitMessage(0);
+        return 0;
+    }
+
+    return DefWindowProcW(window, message, wp, lp);
+}
+
+int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int)
+{
+    WNDCLASSW cls{};
+    cls.lpfnWndProc = WindowProc;
+    cls.hInstance = instance;
+    cls.lpszClassName = L"GameOverlayNativeDev";
+
+    if (!RegisterClassW(&cls))
+        return 1;
+
+    HWND window = CreateWindowExW(
+        WS_EX_LAYERED | WS_EX_TOPMOST | WS_EX_TOOLWINDOW |
+        WS_EX_TRANSPARENT | WS_EX_NOACTIVATE,
+        cls.lpszClassName, L"Game Overlay Dev",
+        WS_POPUP, 0, 0, 360, 28,
+        nullptr, nullptr, instance, nullptr);
+
+    if (!window)
+        return 1;
+
+    SetLayeredWindowAttributes(window, 0, 235, LWA_ALPHA);
+
+    if (!RegisterHotKey(window, ToggleHotkey,
+                        MOD_CONTROL | MOD_SHIFT | MOD_NOREPEAT, 'O') ||
+        !RegisterHotKey(window, ExitHotkey,
+                        MOD_CONTROL | MOD_SHIFT | MOD_NOREPEAT, 'Q'))
+    {
+        MessageBoxW(nullptr, L"Could not register hotkeys.",
+                    L"Game Overlay Dev", MB_OK | MB_ICONERROR);
+        DestroyWindow(window);
+        return 1;
+    }
+
+    metrics.Refresh();
+    SetTimer(window, 1, 1000, nullptr);
+    ShowWindow(window, SW_SHOWNOACTIVATE);
+
+    MSG message;
+    while (GetMessageW(&message, nullptr, 0, 0) > 0)
+    {
+        TranslateMessage(&message);
+        DispatchMessageW(&message);
+    }
+
+    return 0;
+}
