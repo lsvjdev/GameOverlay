@@ -1,14 +1,28 @@
 
-version: 0.3.{build}-dev
+version: 0.4.{build}-dev
 image: Visual Studio 2022
 configuration: Release
 platform: x64
 
 build_script:
   - cmd: call native\build.cmd
+  - ps: |
+      rrorActionPreference = 'Stop'
+      $url = 'https://github.com/GameTechDev/PresentMon/releases/download/v2.4.1/PresentMon-2.4.1-x64.exe'
+      $file = 'build-native\PresentMon-2.4.1-x64.exe'
+      Invoke-WebRequest -Uri $url -OutFile $file
+
+      $expected = 'd74183e7ae630f72cd3690be0373ecbfdc6cbb86578148aab8fa2a7166068f34'
+      $actual = (Get-FileHash $file -Algorithm SHA256).Hash.ToLowerInvariant()
+
+      if ($actual -ne $expected) {
+          throw 'PresentMon checksum verification failed.'
+      }
+
+      Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/GameTechDev/PresentMon/v2.4.1/LICENSE.txt' -OutFile 'build-native\PresentMon-LICENSE.txt'
 
 after_build:
-  - ps: Compress-Archive -Path build-native\GameOverlayDev.exe, LICENSE -DestinationPath GameOverlay-native-dev-win-x64.zip -Force
+  - ps: Compress-Archive -Path build-native\GameOverlayDev.exe, build-native\PresentMon-2.4.1-x64.exe, build-native\PresentMon-LICENSE.txt, LICENSE -DestinationPath GameOverlay-native-dev-win-x64.zip -Force
 
 test: off
 

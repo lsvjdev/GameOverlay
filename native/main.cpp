@@ -6,8 +6,10 @@
 #include <cstdio>
 #include <cwchar>
 #include "system_metrics.h"
+#include "fps_reader.h"
 
 SystemMetrics metrics;
+FpsReader fpsReader;
 
 constexpr int ToggleHotkey = 1;
 constexpr int ExitHotkey = 2;
@@ -34,7 +36,17 @@ LRESULT CALLBACK WindowProc(HWND window, UINT message, WPARAM wp, LPARAM lp)
         wchar_t timeText[32];
         wchar_t cpuText[16];
         wchar_t ramText[16];
+        wchar_t fpsText[16];
 
+        DWORD foregroundPid = 0;
+        GetWindowThreadProcessId(GetForegroundWindow(), &foregroundPid);
+
+        int fps = fpsReader.GetFps(foregroundPid);
+
+        if (fps >= 0)
+            swprintf_s(fpsText, L"%d", fps);
+        else
+            wcscpy_s(fpsText, L"--");
         int hour = time.wHour % 12;
         if (hour == 0) hour = 12;
 
@@ -85,6 +97,7 @@ LRESULT CALLBACK WindowProc(HWND window, UINT message, WPARAM wp, LPARAM lp)
             x += size.cx + 16;
         };
 
+        DrawMetric(L"FPS", fpsText);
         DrawMetric(L"Time", timeText);
         DrawMetric(L"CPU", cpuText);
         DrawMetric(L"RAM", ramText);
@@ -95,10 +108,16 @@ LRESULT CALLBACK WindowProc(HWND window, UINT message, WPARAM wp, LPARAM lp)
         return 0;
     }
 
-    case WM_TIMER:
-        metrics.Refresh();
-        InvalidateRect(window, nullptr, FALSE);
-        return 0;
+        case WM_TIMER:
+        {
+            DWORD foregroundPid = 0;
+            GetWindowThreadProcessId(GetForegroundWindow(), &foregroundPid);
+
+            fpsReader.SetTarget(foregroundPid);
+            metrics.Refresh();
+            InvalidateRect(window, nullptr, FALSE);
+            return 0;
+        }
 
     case WM_HOTKEY:
         if (wp == ToggleHotkey)
@@ -153,6 +172,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int)
     }
 
     metrics.Refresh();
+    fpsReader.Start();
     SetTimer(window, 1, 1000, nullptr);
     ShowWindow(window, SW_SHOWNOACTIVATE);
 
@@ -163,5 +183,6 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int)
         DispatchMessageW(&message);
     }
 
+    fpsReader.Stop();
     return 0;
 }
