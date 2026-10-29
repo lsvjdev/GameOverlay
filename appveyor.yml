@@ -41,8 +41,8 @@ after_build:
           throw 'AMDFamily17.bin not found in official PawnIO Modules archive.'
       }
 
-      New-Item -ItemType Directory -Path 'build-native\modules' -Force | Out-Null
-      Copy-Item $module.FullName 'build-native\modules\AMDFamily17.bin'
+      New-Item -ItemType Directory -Path 'build-native\bin\modules' -Force | Out-Null
+      Copy-Item $module.FullName 'build-native\bin\modules\AMDFamily17.bin'
       Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/namazso/PawnIO.Modules/0.2.11/COPYING' -OutFile 'build-native\PawnIO-Modules-LICENSE.txt'
       @(
         'PawnIO.Modules AMDFamily17.bin, version 0.2.11'
@@ -52,7 +52,16 @@ after_build:
         'The PawnIO driver and PawnIOLib.dll are not bundled.'
       ) | Set-Content 'build-native\PawnIO-Modules-SOURCE.txt' -Encoding UTF8
 
-  - ps: Compress-Archive -Path build-native\GameOverlayDev.exe, build-native\PresentMon-2.4.1-x64.exe, build-native\PresentMon-LICENSE.txt, build-native\modules, build-native\PawnIO-Modules-LICENSE.txt, build-native\PawnIO-Modules-SOURCE.txt, LICENSE -DestinationPath GameOverlay-native-dev-win-x64.zip -Force
+  - ps: |
+      $ErrorActionPreference = 'Stop'
+      New-Item -ItemType Directory -Path 'build-native\bin\licenses' -Force | Out-Null
+      Move-Item 'build-native\PresentMon-2.4.1-x64.exe' 'build-native\bin\PresentMon-2.4.1-x64.exe' -Force
+      Copy-Item 'LICENSE' 'build-native\bin\licenses\LICENSE'
+      Copy-Item 'THIRD-PARTY-NOTICES.md' 'build-native\bin\licenses\THIRD-PARTY-NOTICES.md'
+      Move-Item 'build-native\PresentMon-LICENSE.txt' 'build-native\bin\licenses\PresentMon-LICENSE.txt' -Force
+      Move-Item 'build-native\PawnIO-Modules-LICENSE.txt' 'build-native\bin\licenses\PawnIO-Modules-LICENSE.txt' -Force
+      Move-Item 'build-native\PawnIO-Modules-SOURCE.txt' 'build-native\bin\licenses\PawnIO-Modules-SOURCE.txt' -Force
+      Compress-Archive -Path build-native\GameOverlayDev.exe, build-native\bin -DestinationPath GameOverlay-native-dev-win-x64.zip -Force
 
 test: off
 

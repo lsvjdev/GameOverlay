@@ -44,7 +44,7 @@ public:
         }
 
         executable_ = folder.substr(0, slash + 1)
-            + L"PresentMon-2.4.1-x64.exe";
+            + L"bin\\PresentMon-2.4.1-x64.exe";
 
         if (GetFileAttributesW(executable_.c_str()) == INVALID_FILE_ATTRIBUTES)
         {

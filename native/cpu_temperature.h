@@ -94,7 +94,7 @@ public:
         }
 
         const std::wstring modulePath = executable.substr(0, slash + 1) +
-            L"modules\\AMDFamily17.bin";
+            L"bin\\modules\\AMDFamily17.bin";
         HANDLE file = CreateFileW(modulePath.c_str(), GENERIC_READ,
             FILE_SHARE_READ, nullptr, OPEN_EXISTING,
             FILE_ATTRIBUTE_NORMAL, nullptr);

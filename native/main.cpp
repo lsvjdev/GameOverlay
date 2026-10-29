@@ -6,11 +6,16 @@
 #include <cstdio>
 #include <cwchar>
 #include <cstring>
+#include <shellapi.h>
+#include "settings_config.h"
+#include "settings_window.h"
 #include "system_metrics.h"
 #include "gpu_metrics.h"
 #include "cpu_temperature.h"
 #include "fps_reader.h"
 
+AppSettings settings;
+SettingsWindow settingsWindow(settings);
 SystemMetrics metrics;
 GpuMetrics gpuMetrics;
 CpuTemperature cpuTemperature;
@@ -20,6 +25,39 @@ HFONT overlayFont = nullptr;
 constexpr int ToggleHotkey = 1;
 constexpr int ExitHotkey = 2;
 constexpr int DiagnosticsHotkey = 3;
+constexpr UINT TrayMessage = WM_APP + 1;
+constexpr UINT SettingsChanged = WM_APP + 2;
+
+void ApplyOverlayState(HWND window)
+{
+    static int lastOpacity = -1;
+    static bool lastTransparent = false;
+
+    if (lastOpacity != settings.opacity ||
+        lastTransparent != settings.transparent)
+    {
+        DWORD flags = LWA_ALPHA;
+        if (settings.transparent)
+            flags |= LWA_COLORKEY;
+
+        SetLayeredWindowAttributes(
+            window, RGB(24, 25, 28),
+            static_cast<BYTE>(settings.opacity * 255 / 100), flags);
+        lastOpacity = settings.opacity;
+        lastTransparent = settings.transparent;
+    }
+
+    DWORD foregroundPid = 0;
+    GetWindowThreadProcessId(GetForegroundWindow(), &foregroundPid);
+
+    const bool visible = settings.enabled &&
+        (!settings.gameOnly || fpsReader.GetFps(foregroundPid) >= 0);
+
+    if (visible != (IsWindowVisible(window) != FALSE))
+        ShowWindow(window, visible ? SW_SHOWNOACTIVATE : SW_HIDE);
+
+    InvalidateRect(window, nullptr, FALSE);
+}
 
 void CopyFpsDiagnostics(HWND window)
 {
@@ -101,12 +139,20 @@ LRESULT CALLBACK WindowProc(HWND window, UINT message, WPARAM wp, LPARAM lp)
         else
             wcscpy_s(fpsText, L"--");
 
-        int hour = time.wHour % 12;
-        if (hour == 0) hour = 12;
+        if (settings.clock12)
+        {
+            int hour = time.wHour % 12;
+            if (hour == 0) hour = 12;
 
-        swprintf_s(timeText, L"%02d:%02d:%02d %ls",
-                   hour, time.wMinute, time.wSecond,
-                   time.wHour >= 12 ? L"PM" : L"AM");
+            swprintf_s(timeText, L"%02d:%02d:%02d %ls",
+                       hour, time.wMinute, time.wSecond,
+                       time.wHour >= 12 ? L"PM" : L"AM");
+        }
+        else
+        {
+            swprintf_s(timeText, L"%02d:%02d:%02d",
+                       time.wHour, time.wMinute, time.wSecond);
+        }
 
         if (metrics.CpuPercent >= 0 && cpuTemperature.Celsius >= 0 &&
             metrics.CpuFrequencyMhz >= 0)
@@ -160,7 +206,8 @@ LRESULT CALLBACK WindowProc(HWND window, UINT message, WPARAM wp, LPARAM lp)
         {
             SIZE size{};
 
-            SetTextColor(dc, RGB(189, 181, 188));
+            SetTextColor(dc, settings.transparent
+                ? RGB(238, 239, 241) : RGB(189, 181, 188));
 
             int length = lstrlenW(label);
             TextOutW(dc, x, y, label, length);
@@ -168,7 +215,8 @@ LRESULT CALLBACK WindowProc(HWND window, UINT message, WPARAM wp, LPARAM lp)
 
             x += size.cx + 4;
 
-            SetTextColor(dc, RGB(82, 217, 85));
+            SetTextColor(dc, settings.transparent
+                ? RGB(255, 255, 255) : RGB(82, 217, 85));
 
             length = lstrlenW(value);
             TextOutW(dc, x, y, value, length);
@@ -177,25 +225,37 @@ LRESULT CALLBACK WindowProc(HWND window, UINT message, WPARAM wp, LPARAM lp)
             x += size.cx + 16;
         };
 
-        DrawMetric(L"FPS", fpsText);
-        DrawMetric(L"Time", timeText);
-        DrawMetric(L"CPU", cpuText);
-        DrawMetric(L"GPU", gpuText);
-        DrawMetric(L"VRAM", vramText);
-        DrawMetric(L"RAM", ramText);
+        if (settings.Has(MetricFps)) DrawMetric(L"FPS", fpsText);
+        if (settings.Has(MetricTime)) DrawMetric(L"Time", timeText);
+        if (settings.Has(MetricCpu)) DrawMetric(L"CPU", cpuText);
+        if (settings.Has(MetricGpu)) DrawMetric(L"GPU", gpuText);
+        if (settings.Has(MetricVram)) DrawMetric(L"VRAM", vramText);
+        if (settings.Has(MetricRam)) DrawMetric(L"RAM", ramText);
 
-        // Each metric updates x with its measured text width. Expand the
-        // strip only when necessary so changing values do not make it jitter.
-        const int requiredWidth = x - 16 + 10;
+        const int requiredWidth = x == 10 ? 160 : x - 16 + 10;
 
         SelectObject(dc, previous);
         EndPaint(window, &paint);
 
-        if (requiredWidth > area.right)
+        const int screenWidth = GetSystemMetrics(SM_CXSCREEN);
+        const int screenHeight = GetSystemMetrics(SM_CYSCREEN);
+        const int targetWidth = requiredWidth > screenWidth
+            ? screenWidth : requiredWidth;
+        const int horizontal = settings.position % 3;
+        const int targetX = horizontal == 0 ? 0 :
+            (horizontal == 1 ? (screenWidth - targetWidth) / 2 :
+                               screenWidth - targetWidth);
+        const int targetY = settings.position < 3
+            ? 0 : screenHeight - area.bottom;
+
+        RECT current{};
+        GetWindowRect(window, &current);
+
+        if (current.left != targetX || current.top != targetY ||
+            current.right - current.left != targetWidth)
         {
-            SetWindowPos(window, nullptr, 0, 0, requiredWidth, area.bottom,
-                         SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
-            InvalidateRect(window, nullptr, FALSE);
+            SetWindowPos(window, nullptr, targetX, targetY,
+                targetWidth, area.bottom, SWP_NOZORDER | SWP_NOACTIVATE);
         }
 
         return 0;
@@ -219,14 +279,59 @@ LRESULT CALLBACK WindowProc(HWND window, UINT message, WPARAM wp, LPARAM lp)
             lastMetricsTick = now;
         }
 
-        InvalidateRect(window, nullptr, FALSE);
+        ApplyOverlayState(window);
         return 0;
     }
 
+    case SettingsChanged:
+        ApplyOverlayState(window);
+        return 0;
+
+    case TrayMessage:
+        if (lp == WM_LBUTTONDBLCLK)
+        {
+            settingsWindow.Show(window);
+        }
+        else if (lp == WM_RBUTTONUP || lp == WM_CONTEXTMENU)
+        {
+            POINT point{};
+            GetCursorPos(&point);
+
+            HMENU menu = CreatePopupMenu();
+            AppendMenuW(menu, MF_STRING, 101, L"Open settings");
+            AppendMenuW(menu, MF_STRING, 102,
+                settings.enabled ? L"Hide overlay" : L"Show overlay");
+            AppendMenuW(menu, MF_SEPARATOR, 0, nullptr);
+            AppendMenuW(menu, MF_STRING, 103, L"Exit");
+
+            SetForegroundWindow(window);
+            const UINT action = TrackPopupMenu(menu,
+                TPM_RIGHTBUTTON | TPM_RETURNCMD | TPM_NONOTIFY,
+                point.x, point.y, 0, window, nullptr);
+            DestroyMenu(menu);
+            PostMessageW(window, WM_NULL, 0, 0);
+
+            if (action == 101)
+                settingsWindow.Show(window);
+            else if (action == 102)
+            {
+                settings.enabled = !settings.enabled;
+                settings.Save();
+                ApplyOverlayState(window);
+            }
+            else if (action == 103)
+                DestroyWindow(window);
+        }
+        return 0;
+
     case WM_HOTKEY:
         if (wp == ToggleHotkey)
-            ShowWindow(window, IsWindowVisible(window)
-                        ? SW_HIDE : SW_SHOWNOACTIVATE);
+        {
+            settings.enabled = !settings.enabled;
+            settings.Save();
+            ApplyOverlayState(window);
+            settingsWindow.Refresh();
+        }
         else if (wp == ExitHotkey)
             DestroyWindow(window);
         else if (wp == DiagnosticsHotkey)
@@ -243,6 +348,13 @@ LRESULT CALLBACK WindowProc(HWND window, UINT message, WPARAM wp, LPARAM lp)
         UnregisterHotKey(window, ToggleHotkey);
         UnregisterHotKey(window, ExitHotkey);
         UnregisterHotKey(window, DiagnosticsHotkey);
+
+        NOTIFYICONDATAW tray{};
+        tray.cbSize = sizeof(tray);
+        tray.hWnd = window;
+        tray.uID = 1;
+        Shell_NotifyIconW(NIM_DELETE, &tray);
+
         PostQuitMessage(0);
         return 0;
     }
@@ -252,6 +364,8 @@ LRESULT CALLBACK WindowProc(HWND window, UINT message, WPARAM wp, LPARAM lp)
 
 int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int)
 {
+    settings.Load();
+
     WNDCLASSW cls{};
     cls.lpfnWndProc = WindowProc;
     cls.hInstance = instance;
@@ -270,7 +384,15 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int)
     if (!window)
         return 1;
 
-    SetLayeredWindowAttributes(window, 0, 235, LWA_ALPHA);
+    NOTIFYICONDATAW tray{};
+    tray.cbSize = sizeof(tray);
+    tray.hWnd = window;
+    tray.uID = 1;
+    tray.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP;
+    tray.uCallbackMessage = TrayMessage;
+    tray.hIcon = LoadIconW(nullptr, IDI_APPLICATION);
+    wcscpy_s(tray.szTip, L"Game Overlay Dev");
+    Shell_NotifyIconW(NIM_ADD, &tray);
 
     if (!RegisterHotKey(window, ToggleHotkey,
                         MOD_CONTROL | MOD_SHIFT | MOD_NOREPEAT, 'O') ||
@@ -295,7 +417,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int)
     fpsReader.SetTarget(initialPid);
     fpsReader.Start();
     SetTimer(window, 1, 500, nullptr);
-    ShowWindow(window, SW_SHOWNOACTIVATE);
+    ApplyOverlayState(window);
 
     MSG message;
     while (GetMessageW(&message, nullptr, 0, 0) > 0)
