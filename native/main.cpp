@@ -103,9 +103,21 @@ LRESULT CALLBACK WindowProc(HWND window, UINT message, WPARAM wp, LPARAM lp)
         DrawMetric(L"CPU", cpuText);
         DrawMetric(L"RAM", ramText);
 
+        // Each metric updates x with its measured text width. Expand the
+        // strip only when necessary so changing values do not make it jitter.
+        const int requiredWidth = x - 16 + 10;
+
         SelectObject(dc, previous);
         DeleteObject(font);
         EndPaint(window, &paint);
+
+        if (requiredWidth > area.right)
+        {
+            SetWindowPos(window, nullptr, 0, 0, requiredWidth, area.bottom,
+                         SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
+            InvalidateRect(window, nullptr, FALSE);
+        }
+
         return 0;
     }
 
