@@ -324,7 +324,7 @@ private:
         startup.hStdError = writePipe;
 
         std::wstring command = L"\"" + executable_ +
-            L"\" --output_stdout --no_console_stats --v2_metrics"
+            L"\" --output_stdout --no_console_stats"
             L" --no_track_gpu --no_track_input --exclude_dropped"
             L" --session_name " + session_ +
             L" --stop_existing_session";
