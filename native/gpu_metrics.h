@@ -6,8 +6,7 @@
 #include <string>
 #include "gpu_percentage.h"
 
-// Dynamic NVML loading: uses the user's NVIDIA driver, no SDK/runtime installer.
-// This first backend intentionally targets NVIDIA GPUs only. Other GPUs show --.
+// NVML is loaded from the installed NVIDIA driver.
 class GpuMetrics
 {
 public:
@@ -100,8 +99,7 @@ public:
             return false;
         }
 
-        // NVML enumerates NVIDIA devices, not the laptop's integrated AMD GPU.
-        for (unsigned int i = 0; i < deviceCount && i < 16; ++i)
+                for (unsigned int i = 0; i < deviceCount && i < 16; ++i)
         {
             NvmlDevice candidate = nullptr;
             if (handle_(i, &candidate) != 0 || !candidate)

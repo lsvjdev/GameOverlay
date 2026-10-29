@@ -3,6 +3,9 @@
 
 #include <windows.h>
 #include <powrprof.h>
+#include <pdh.h>
+#include <pdhmsg.h>
+#include <cmath>
 #include <cstdint>
 #include <vector>
 
@@ -11,6 +14,12 @@ struct SystemMetrics
     int CpuPercent = -1;
     int CpuFrequencyMhz = -1;
     int RamPercent = -1;
+
+    ~SystemMetrics()
+    {
+        if (frequencyQuery_)
+            PdhCloseQuery(frequencyQuery_);
+    }
 
     void Refresh()
     {
@@ -78,38 +87,84 @@ private:
     void RefreshFrequency()
     {
         CpuFrequencyMhz = -1;
-        const DWORD cores = GetActiveProcessorCount(ALL_PROCESSOR_GROUPS);
 
-        if (cores == 0 || cores > 512)
-            return;
-
-        if (coreInfo_.size() != cores)
-            coreInfo_.resize(cores);
-
-        const LONG status = CallNtPowerInformation(
-            ProcessorInformation, nullptr, 0, coreInfo_.data(),
-            static_cast<ULONG>(coreInfo_.size() * sizeof(CorePowerInfo)));
-
-        if (status != 0)
-            return;
-
-        std::uint64_t totalMhz = 0;
-        unsigned int usableCores = 0;
-
-        for (const auto& core : coreInfo_)
+        if (!frequencyQuery_)
         {
-            if (core.currentMhz > 0 && core.currentMhz < 15000)
+            const DWORD cores = GetActiveProcessorCount(ALL_PROCESSOR_GROUPS);
+            if (cores == 0 || cores > 512)
+                return;
+
+            std::vector<CorePowerInfo> coreInfo(cores);
+            const LONG status = CallNtPowerInformation(
+                ProcessorInformation, nullptr, 0, coreInfo.data(),
+                static_cast<ULONG>(coreInfo.size() * sizeof(CorePowerInfo)));
+
+            if (status != 0)
+                return;
+
+            std::uint64_t totalRatedMhz = 0;
+            unsigned int validCores = 0;
+
+            for (const auto& core : coreInfo)
             {
-                totalMhz += core.currentMhz;
-                ++usableCores;
+                if (core.maxMhz >= 100 && core.maxMhz < 15000)
+                {
+                    totalRatedMhz += core.maxMhz;
+                    ++validCores;
+                }
             }
+
+            if (!validCores)
+                return;
+
+            const int ratedMhz = static_cast<int>(totalRatedMhz / validCores);
+
+            if (PdhOpenQueryW(nullptr, 0, &frequencyQuery_) != ERROR_SUCCESS)
+            {
+                frequencyQuery_ = nullptr;
+                return;
+            }
+
+            if (PdhAddEnglishCounterW(
+                frequencyQuery_,
+                L"\\Processor Information(_Total)\\% Processor Performance",
+                0, &performanceCounter_) != ERROR_SUCCESS)
+            {
+                PdhCloseQuery(frequencyQuery_);
+                frequencyQuery_ = nullptr;
+                performanceCounter_ = nullptr;
+                return;
+            }
+
+            ratedFrequencyMhz_ = ratedMhz;
+            PdhCollectQueryData(frequencyQuery_);
+            return;
         }
 
-        if (usableCores)
-            CpuFrequencyMhz = static_cast<int>(totalMhz / usableCores);
+        if (PdhCollectQueryData(frequencyQuery_) != ERROR_SUCCESS)
+            return;
+
+        PDH_FMT_COUNTERVALUE value{};
+        if (PdhGetFormattedCounterValue(
+            performanceCounter_, PDH_FMT_DOUBLE | PDH_FMT_NOCAP100,
+            nullptr, &value) != ERROR_SUCCESS)
+            return;
+
+        if (value.CStatus != PDH_CSTATUS_VALID_DATA &&
+            value.CStatus != PDH_CSTATUS_NEW_DATA)
+            return;
+
+        const double percent = value.doubleValue;
+        if (!std::isfinite(percent) || percent <= 0.0 || percent > 350.0)
+            return;
+
+        CpuFrequencyMhz = static_cast<int>(
+            std::lround(ratedFrequencyMhz_ * percent / 100.0));
     }
 
-    std::vector<CorePowerInfo> coreInfo_;
+    PDH_HQUERY frequencyQuery_ = nullptr;
+    PDH_HCOUNTER performanceCounter_ = nullptr;
+    int ratedFrequencyMhz_ = 0;
 
     static std::uint64_t ToTicks(const FILETIME& time)
     {

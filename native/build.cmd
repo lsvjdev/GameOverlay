@@ -23,7 +23,7 @@ set "OUT=%~dp0..\build-native"
 if not exist "%OUT%" mkdir "%OUT%"
 pushd "%OUT%"
 
-cl /nologo /std:c++20 /O2 /W4 /EHsc /DUNICODE /D_UNICODE "%~dp0main.cpp" /Fe:GameOverlayDev.exe /link /SUBSYSTEM:WINDOWS /MANIFESTUAC:"level='requireAdministrator' uiAccess='false'" user32.lib gdi32.lib psapi.lib PowrProf.lib
+cl /nologo /std:c++20 /O2 /W4 /EHsc /DUNICODE /D_UNICODE "%~dp0main.cpp" /Fe:GameOverlayDev.exe /link /SUBSYSTEM:WINDOWS /MANIFESTUAC:"level='requireAdministrator' uiAccess='false'" user32.lib gdi32.lib psapi.lib PowrProf.lib Pdh.lib
 
 set "RESULT=%ERRORLEVEL%"
 if not "%RESULT%"=="0" (
