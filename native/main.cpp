@@ -5,6 +5,7 @@
 #include <windows.h>
 #include <cstdio>
 #include <cwchar>
+#include <cstring>
 #include "system_metrics.h"
 #include "fps_reader.h"
 
@@ -13,6 +14,49 @@ FpsReader fpsReader;
 
 constexpr int ToggleHotkey = 1;
 constexpr int ExitHotkey = 2;
+constexpr int DiagnosticsHotkey = 3;
+
+void CopyFpsDiagnostics(HWND window)
+{
+    const std::wstring report = fpsReader.Diagnostics();
+    bool copied = false;
+
+    if (OpenClipboard(window))
+    {
+        if (EmptyClipboard())
+        {
+            const SIZE_T bytes = (report.size() + 1) * sizeof(wchar_t);
+            HGLOBAL memory = GlobalAlloc(GMEM_MOVEABLE, bytes);
+
+            if (memory != nullptr)
+            {
+                void* data = GlobalLock(memory);
+
+                if (data != nullptr)
+                {
+                    memcpy(data, report.c_str(), bytes);
+                    GlobalUnlock(memory);
+
+                    if (SetClipboardData(CF_UNICODETEXT, memory))
+                    {
+                        copied = true;
+                        memory = nullptr;
+                    }
+                }
+
+                if (memory != nullptr)
+                    GlobalFree(memory);
+            }
+        }
+
+        CloseClipboard();
+    }
+
+    MessageBoxW(window,
+                copied ? L"FPS diagnostics copied. Paste them in ChatGPT."
+                       : L"Could not copy FPS diagnostics.",
+                L"Game Overlay Dev", MB_OK | MB_ICONINFORMATION | MB_TOPMOST);
+}
 
 LRESULT CALLBACK WindowProc(HWND window, UINT message, WPARAM wp, LPARAM lp)
 {
@@ -138,12 +182,15 @@ LRESULT CALLBACK WindowProc(HWND window, UINT message, WPARAM wp, LPARAM lp)
                         ? SW_HIDE : SW_SHOWNOACTIVATE);
         else if (wp == ExitHotkey)
             DestroyWindow(window);
+        else if (wp == DiagnosticsHotkey)
+            CopyFpsDiagnostics(window);
         return 0;
 
     case WM_DESTROY:
         KillTimer(window, 1);
         UnregisterHotKey(window, ToggleHotkey);
         UnregisterHotKey(window, ExitHotkey);
+        UnregisterHotKey(window, DiagnosticsHotkey);
         PostQuitMessage(0);
         return 0;
     }
@@ -183,6 +230,10 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int)
         DestroyWindow(window);
         return 1;
     }
+
+    // Optional diagnostics shortcut: Ctrl + Shift + D.
+    RegisterHotKey(window, DiagnosticsHotkey,
+                   MOD_CONTROL | MOD_SHIFT | MOD_NOREPEAT, 'D');
 
     metrics.Refresh();
     fpsReader.Start();
