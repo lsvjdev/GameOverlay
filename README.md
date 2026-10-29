@@ -40,7 +40,7 @@ Please check existing issues before creating a new one. Bug reports are especial
 
 ## License
 
-Copyright (c) 2026 LSVJ-Coding.
+Copyright (c) 2026 lsvjdev.
 
 The original project code is licensed under [GPL-3.0-only](LICENSE). External libraries retain their own licenses. See [third-party notices](THIRD-PARTY-NOTICES.md) for details.
 

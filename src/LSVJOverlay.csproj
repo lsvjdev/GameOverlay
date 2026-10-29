@@ -14,8 +14,8 @@
     <FileVersion>0.2.0.0</FileVersion>
     <RootNamespace>LSVJOverlay</RootNamespace>
     <Version>0.2.0</Version>
-    <Authors>LSVJ-Coding</Authors>
-    <Copyright>Copyright © 2026 LSVJ-Coding</Copyright>
+    <Authors>lsvjdev</Authors>
+    <Copyright>Copyright © 2026 lsvjdev</Copyright>
     <PackageLicenseExpression>GPL-3.0-only</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/lsvjdev/GameOverlay</RepositoryUrl>
   </PropertyGroup>
