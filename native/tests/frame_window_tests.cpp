@@ -7,11 +7,17 @@ int main()
 {
     FrameWindow window;
     for (int i = 0; i < 60; ++i)
-        assert(window.Add(1000.0 / 60.0));
+        {
+            const bool accepted = window.Add(1000.0 / 60.0);
+            assert(accepted);
+        }
     assert(window.Fps() == 60);
 
     for (int i = 0; i < 30; ++i)
-        assert(window.Add(1000.0 / 30.0));
+        {
+            const bool accepted = window.Add(1000.0 / 30.0);
+            assert(accepted);
+        }
     assert(window.Fps() == 30);
 
     assert(!window.Add(0.0));

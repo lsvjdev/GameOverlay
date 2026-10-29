@@ -487,6 +487,7 @@ private:
                 if (started)
                 {
                     process_ = info.hProcess;
+                    launched_.store(true);
                     launchState_.store(2);
 
                     // The job kills the child if the overlay crashes or exits.
@@ -528,7 +529,6 @@ private:
             return;
         }
 
-        launched_ = true;
         CloseHandle(info.hThread);
 
         ReadFrames(readPipe);
