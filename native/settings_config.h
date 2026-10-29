@@ -3,16 +3,7 @@
 
 #include <windows.h>
 #include <string>
-
-enum OverlayMetric : unsigned
-{
-    MetricFps = 1u << 0,
-    MetricTime = 1u << 1,
-    MetricCpu = 1u << 2,
-    MetricGpu = 1u << 3,
-    MetricVram = 1u << 4,
-    MetricRam = 1u << 5
-};
+#include "metric_order.h"
 
 struct AppSettings
 {
@@ -24,6 +15,7 @@ struct AppSettings
     int position = 0;
     unsigned metrics = MetricFps | MetricTime | MetricCpu |
                        MetricGpu | MetricVram | MetricRam;
+    std::array<unsigned, 6> order = DefaultMetricOrder;
 
     std::wstring Path() const
     {
@@ -59,7 +51,17 @@ struct AppSettings
         position = read(L"position", 0);
         metrics = static_cast<unsigned>(read(L"metrics", 63));
 
-        if (opacity < 25 || opacity > 100)
+        for (int i = 0; i < 6; ++i)
+        {
+            const auto key = L"order_" + std::to_wstring(i);
+            order[i] = static_cast<unsigned>(read(key.c_str(),
+                                                  DefaultMetricOrder[i]));
+        }
+
+        if (!IsValidMetricOrder(order))
+            order = DefaultMetricOrder;
+
+        if (opacity < 0 || opacity > 100)
             opacity = 92;
         if (position < 0 || position > 5)
             position = 0;
@@ -86,6 +88,12 @@ struct AppSettings
         write(L"opacity", opacity);
         write(L"position", position);
         write(L"metrics", static_cast<int>(metrics));
+
+        for (int i = 0; i < 6; ++i)
+        {
+            const auto key = L"order_" + std::to_wstring(i);
+            write(key.c_str(), static_cast<int>(order[i]));
+        }
     }
 
     bool Has(unsigned metric) const

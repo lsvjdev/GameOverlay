@@ -9,6 +9,7 @@
 #include <shellapi.h>
 #include "settings_config.h"
 #include "settings_window.h"
+#include "game_detector.h"
 #include "system_metrics.h"
 #include "gpu_metrics.h"
 #include "cpu_temperature.h"
@@ -16,11 +17,13 @@
 
 AppSettings settings;
 SettingsWindow settingsWindow(settings);
+GameDetector gameDetector;
 SystemMetrics metrics;
 GpuMetrics gpuMetrics;
 CpuTemperature cpuTemperature;
 FpsReader fpsReader;
 HFONT overlayFont = nullptr;
+bool overlayFontTransparent = false;
 
 constexpr int ToggleHotkey = 1;
 constexpr int ExitHotkey = 2;
@@ -33,17 +36,15 @@ void ApplyOverlayState(HWND window)
     static int lastOpacity = -1;
     static bool lastTransparent = false;
 
-    if (lastOpacity != settings.opacity ||
-        lastTransparent != settings.transparent)
-    {
-        DWORD flags = LWA_ALPHA;
-        if (settings.transparent)
-            flags |= LWA_COLORKEY;
+    const int opacity = settings.transparent ? 100 : settings.opacity;
 
+    if (lastOpacity != opacity || lastTransparent != settings.transparent)
+    {
         SetLayeredWindowAttributes(
             window, RGB(24, 25, 28),
-            static_cast<BYTE>(settings.opacity * 255 / 100), flags);
-        lastOpacity = settings.opacity;
+            static_cast<BYTE>(opacity * 255 / 100),
+            settings.transparent ? LWA_COLORKEY : LWA_ALPHA);
+        lastOpacity = opacity;
         lastTransparent = settings.transparent;
     }
 
@@ -51,7 +52,9 @@ void ApplyOverlayState(HWND window)
     GetWindowThreadProcessId(GetForegroundWindow(), &foregroundPid);
 
     const bool visible = settings.enabled &&
-        (!settings.gameOnly || fpsReader.GetFps(foregroundPid) >= 0);
+        (!settings.gameOnly ||
+         (gameDetector.IsLikelyGame(GetForegroundWindow()) &&
+          fpsReader.GetFps(foregroundPid) >= 0));
 
     if (visible != (IsWindowVisible(window) != FALSE))
         ShowWindow(window, visible ? SW_SHOWNOACTIVATE : SW_HIDE);
@@ -189,12 +192,20 @@ LRESULT CALLBACK WindowProc(HWND window, UINT message, WPARAM wp, LPARAM lp)
         else
             wcscpy_s(vramText, L"--");
 
-        if (!overlayFont)
+        if (!overlayFont || overlayFontTransparent != settings.transparent)
+        {
+            if (overlayFont)
+                DeleteObject(overlayFont);
+
             overlayFont = CreateFontW(
                 -16, 0, 0, 0, FW_SEMIBOLD, FALSE, FALSE, FALSE,
                 DEFAULT_CHARSET, OUT_DEFAULT_PRECIS,
-                CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY,
+                CLIP_DEFAULT_PRECIS,
+                settings.transparent ? NONANTIALIASED_QUALITY : CLEARTYPE_QUALITY,
                 DEFAULT_PITCH, L"Segoe UI");
+
+            overlayFontTransparent = settings.transparent;
+        }
 
         HGDIOBJ previous = SelectObject(dc, overlayFont);
         SetBkMode(dc, TRANSPARENT);
@@ -225,12 +236,21 @@ LRESULT CALLBACK WindowProc(HWND window, UINT message, WPARAM wp, LPARAM lp)
             x += size.cx + 16;
         };
 
-        if (settings.Has(MetricFps)) DrawMetric(L"FPS", fpsText);
-        if (settings.Has(MetricTime)) DrawMetric(L"Time", timeText);
-        if (settings.Has(MetricCpu)) DrawMetric(L"CPU", cpuText);
-        if (settings.Has(MetricGpu)) DrawMetric(L"GPU", gpuText);
-        if (settings.Has(MetricVram)) DrawMetric(L"VRAM", vramText);
-        if (settings.Has(MetricRam)) DrawMetric(L"RAM", ramText);
+        for (unsigned metric : settings.order)
+        {
+            if (!settings.Has(metric))
+                continue;
+
+            switch (metric)
+            {
+            case MetricFps: DrawMetric(L"FPS", fpsText); break;
+            case MetricTime: DrawMetric(L"Time", timeText); break;
+            case MetricCpu: DrawMetric(L"CPU", cpuText); break;
+            case MetricGpu: DrawMetric(L"GPU", gpuText); break;
+            case MetricVram: DrawMetric(L"VRAM", vramText); break;
+            case MetricRam: DrawMetric(L"RAM", ramText); break;
+            }
+        }
 
         const int requiredWidth = x == 10 ? 160 : x - 16 + 10;
 

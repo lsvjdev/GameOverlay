@@ -46,3 +46,18 @@ Settings are stored locally at
 
 CPU temperature and GPU availability differ across devices. Unsupported
 readings are not fabricated; the app leaves them out or shows `--`.
+
+## Settings and display modes
+
+Settings can be resized and edited without restarting the overlay. The
+**Metrics** page has separate visibility checkboxes and arrows to reorder
+the metrics. The order and selection are saved between launches.
+
+**Appearance** offers six screen positions and dark-strip or transparent
+text display. Opacity changes in 1% increments in dark-strip mode only.
+The transparent style uses fully opaque text and does not apply opacity.
+
+**Only while gaming** currently uses an FPS signal and excludes known
+desktop applications, including Spotify, browsers and chat clients.
+This is a first-pass heuristic; it is not a definitive game detector.
+An explicit per-app allow/block list is planned for a later update.

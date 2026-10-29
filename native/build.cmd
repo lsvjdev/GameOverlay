@@ -62,6 +62,18 @@ if errorlevel 1 (
 )
 
 CpuTemperatureTests.exe
+if errorlevel 1 (
+    popd
+    exit /b 1
+)
+
+cl /nologo /std:c++20 /O2 /W4 /EHsc "%~dp0tests\metric_order_tests.cpp" /Fe:MetricOrderTests.exe
+if errorlevel 1 (
+    popd
+    exit /b 1
+)
+
+MetricOrderTests.exe
 set "RESULT=%ERRORLEVEL%"
 popd
 
