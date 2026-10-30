@@ -1,40 +1,205 @@
-
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Game Overlay</title>
-    <style>
-        body {
-            margin: 0;
-            min-height: 100vh;
-            display: grid;
-            place-items: center;
-            background: #111316;
-            color: #f1f1f1;
-            font: 16px "Segoe UI", sans-serif;
-        }
-        main {
-            max-width: 550px;
-            padding: 32px;
-        }
-        h1 { font-size: 48px; margin-bottom: 12px; }
-        p { color: #a9abb2; line-height: 1.7; }
-        a { color: #64dd80; }
-    </style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0e110f">
+  <meta name="description" content="Game Overlay is a lightweight native Windows performance overlay. FPS, CPU, GPU and memory stats without .NET, RTSS or telemetry in the experimental C++ build.">
+  <meta property="og:title" content="Game Overlay — the numbers, not the noise">
+  <meta property="og:description" content="A small native performance overlay for Windows. Open source. No telemetry.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://lsvjdev.github.io/GameOverlay/">
+  <title>Game Overlay — the numbers, not the noise</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+  <script src="app.js" defer></script>
 </head>
 <body>
-    <main>
-        <h1>Game Overlay.</h1>
-        <p>
-            A lightweight, native performance overlay
-            for Windows. No telemetry. No unnecessary bloat.
-        </p>
-        <p>Website under construction.</p>
-        <a href="https://github.com/lsvjdev/GameOverlay">
-            View on GitHub
-        </a>
-    </main>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <div class="wrap header-inner">
+      <a class="brand" href="./" aria-label="Game Overlay home">
+        <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+        game overlay<span style="color:var(--acid)">.</span>
+      </a>
+      <button class="nav-toggle" aria-label="Open navigation" aria-expanded="false" aria-controls="site-navigation">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M2 6H18M2 14H18" stroke="currentColor" stroke-width="1.7"/></svg>
+      </button>
+      <nav class="nav-links" id="site-navigation" aria-label="Main navigation" data-open="false">
+        <a href="#features">Features</a>
+        <a href="#preview">Preview</a>
+        <a href="guide.html">Setup guide</a>
+        <a href="licenses.html">Licenses</a>
+        <a class="nav-source" href="https://github.com/lsvjdev/GameOverlay" target="_blank" rel="noopener noreferrer">GitHub ↗</a>
+      </nav>
+    </div>
+  </header>
+
+  <div class="top-status">
+    <div class="wrap">
+      <span><span class="status-dot" aria-hidden="true"></span> EXPERIMENTAL / NATIVE DEVELOPMENT BUILD</span>
+      <span class="tagline">SOURCE AVAILABLE ON <a href="https://github.com/lsvjdev/GameOverlay/tree/dev">DEV ↗</a></span>
+    </div>
+  </div>
+
+  <main id="main">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="wrap hero-main">
+        <div class="hero-content">
+          <div class="eyebrow">A quieter way to monitor your game. // 001</div>
+          <h1 id="hero-title"><span class="line">The numbers.</span><span class="line acid">Not the noise.</span></h1>
+          <p class="hero-description">FPS, temperatures and system load in one small strip. Built in native C++ for Windows, with no .NET dependency, no account and no telemetry.</p>
+          <div class="hero-actions">
+            <a class="action action-primary" href="#preview">See the overlay <span aria-hidden="true">↗</span></a>
+            <a class="action action-outline" href="guide.html">Get started <span aria-hidden="true">↗</span></a>
+          </div>
+          <div class="hero-meta">
+            <span>Windows x64</span>
+            <span>GPL-3.0-only</span>
+            <span>Built in the open</span>
+          </div>
+        </div>
+
+        <div class="hero-visual" id="preview">
+          <div class="instrument" data-style="strip" data-demo>
+            <div class="instrument-top">
+              <span class="mono">DISPLAY / 01</span>
+              <span class="mono right">LIVE-STYLE PREVIEW<span aria-hidden="true"> ●</span></span>
+            </div>
+            <div class="instrument-viewport">
+              <div class="abstract-landscape" aria-hidden="true">
+                <div class="land-block one"></div><div class="land-block two"></div>
+                <div class="land-block three"></div><div class="land-block four"></div>
+                <div class="land-line"></div>
+              </div>
+              <div class="hud" aria-label="Example overlay readings">
+                <span class="hud-item"><span class="hud-label">FPS</span><span class="hud-value">60</span></span>
+                <span class="hud-item"><span class="hud-label">Time</span><span class="hud-value">07:42 PM</span></span>
+                <span class="hud-item"><span class="hud-label">CPU</span><span class="hud-value">42% 74°C</span></span>
+                <span class="hud-item"><span class="hud-label">GPU</span><span class="hud-value">67% 71°C</span></span>
+                <span class="hud-item"><span class="hud-label">RAM</span><span class="hud-value">58%</span></span>
+              </div>
+            </div>
+            <div class="instrument-foot">
+              <span class="demo-caption">ILLUSTRATIVE VALUES · NOT LIVE DATA</span>
+              <div class="mode-switch" role="group" aria-label="Preview appearance">
+                <button type="button" aria-pressed="true" data-preview-mode="strip">Dark strip</button>
+                <button type="button" aria-pressed="false" data-preview-mode="clear">Transparent</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="wrap hero-bottom" aria-label="Project highlights">
+        <div><span>01 /</span><strong>Lightweight native Windows app</strong></div>
+        <div><span>02 /</span><strong>No RTSS needed for native FPS</strong></div>
+        <div><span>03 /</span><strong>Local-only settings and measurements</strong></div>
+      </div>
+    </section>
+
+    <section class="paper section-pad" id="features" aria-labelledby="features-title">
+      <div class="wrap">
+        <div class="section-intro">
+          <div>
+            <div class="eyebrow">02 / THE POINT</div>
+            <h2 class="section-title" id="features-title">Built for the<br>corner of<br>your screen.</h2>
+          </div>
+          <p>A performance readout shouldn't be another thing competing for your attention. Get the information you need, decide what shows up, then get back to playing.</p>
+        </div>
+        <div class="feature-list">
+          <article class="feature-row">
+            <span class="section-index">01</span>
+            <h3>Only what you choose.</h3>
+            <p>Toggle and reorder FPS, system time, CPU, GPU, VRAM and RAM readings. CPU temperature and clock speed are displayed when the relevant sensors are available.</p>
+          </article>
+          <article class="feature-row">
+            <span class="section-index">02</span>
+            <h3>Two ways to disappear.</h3>
+            <p>Use a compact dark strip or transparent text. Position it along the top or bottom of your screen, and set dark-strip opacity to suit your game.</p>
+          </article>
+          <article class="feature-row">
+            <span class="section-index">03</span>
+            <h3>No unnecessary company.</h3>
+            <p>No account, ad panel, analytics or game booster. The native build uses Windows APIs and a small external FPS collector instead of a bundled .NET runtime.</p>
+          </article>
+          <article class="feature-row">
+            <span class="section-index">04</span>
+            <h3>Made to be inspected.</h3>
+            <p>Source available on GitHub under GPL-3.0-only. Development happens publicly, with bugs and limitations documented rather than hidden behind a polished download button.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="hardware section-pad" id="architecture" aria-labelledby="architecture-title">
+      <div class="wrap">
+        <div class="hardware-heading">
+          <div>
+            <div class="eyebrow">03 / UNDER THE HOOD</div>
+            <h2 class="section-title" id="architecture-title">Small by design.<br>Not by omission.</h2>
+          </div>
+          <p>The native build separates the overlay from the FPS collector and reads supported hardware sensors through native interfaces. No unnecessary monitoring history, and no background web service.</p>
+        </div>
+        <div class="pipeline" aria-label="Monitoring architecture">
+          <div class="pipeline-item">
+            <strong>GameOverlayDev.exe</strong>
+            <p>Overlay, local preferences, native settings window, CPU/RAM monitoring.</p>
+            <span class="mini-key">WINDOWS / C++</span>
+          </div>
+          <div class="pipeline-item">
+            <strong>PresentMon</strong>
+            <p>Frame presentation data via Windows ETW. Included in the native development package.</p>
+            <span class="mini-key">FPS COLLECTOR</span>
+          </div>
+          <div class="pipeline-item">
+            <strong>Driver interfaces</strong>
+            <p>NVIDIA NVML where supported; optional PawnIO for compatible AMD CPU temperatures.</p>
+            <span class="mini-key">OPTIONAL SENSORS</span>
+          </div>
+        </div>
+        <div class="terminal">
+          <span class="glyph" aria-hidden="true">›_</span>
+          <div>
+            <strong>Privacy is the default.</strong>
+            <p>Preferences are saved locally. Game Overlay doesn't send your hardware readings to an online service. Diagnostics are copied only when you request them.</p>
+          </div>
+        </div>
+        <p class="arch-note">NOTE / The experimental collector runs as a second process. The native build has been tested in selected games, not every game or anti-cheat configuration. Hardware support varies.</p>
+      </div>
+    </section>
+
+    <section class="paper start-section" id="get-started" aria-labelledby="start-title">
+      <div class="wrap start-layout">
+        <div>
+          <div class="eyebrow">04 / GET YOUR HANDS ON IT</div>
+          <h2 class="section-title" id="start-title">It's a work<br>in progress.<br>Come look.</h2>
+        </div>
+        <div class="start-side">
+          <p>There isn't an official stable native release yet. The current C++ build lives on the <strong>dev</strong> branch, and testers can build it with the provided scripts. See the setup guide for dependencies, shortcuts and current limitations.</p>
+          <div class="hero-actions">
+            <a class="action action-primary" href="guide.html">Read the setup guide <span aria-hidden="true">↗</span></a>
+            <a class="action action-outline" href="https://github.com/lsvjdev/GameOverlay/tree/dev" target="_blank" rel="noopener noreferrer">Browse dev source <span aria-hidden="true">↗</span></a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <div class="footer-grid">
+        <span>GAME OVERLAY / MADE TO STAY SMALL.</span>
+        <nav class="footer-links" aria-label="Footer navigation">
+          <a href="guide.html">Setup</a>
+          <a href="licenses.html">Licenses</a>
+          <a href="https://github.com/lsvjdev/GameOverlay/issues" target="_blank" rel="noopener noreferrer">Issues ↗</a>
+          <a href="https://github.com/lsvjdev/GameOverlay" target="_blank" rel="noopener noreferrer">GitHub ↗</a>
+        </nav>
+      </div>
+      <p class="footer-note">© 2026 Game Overlay contributors. Unofficial independent project. No association with NVIDIA, Intel, Razer or game publishers.</p>
+    </div>
+  </footer>
 </body>
 </html>
