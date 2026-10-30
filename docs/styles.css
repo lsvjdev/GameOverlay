@@ -277,3 +277,15 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--acid); outline-
 /* Preserve the user's real game screenshot in the homepage preview. */
 .instrument-viewport::before { display: none; }
 .instrument-viewport::after { color: #dde0d7; text-shadow: 0 1px 3px #111; }
+
+/* Transparent preview uses smooth white text, separated readings. */
+.instrument[data-style="clear"] .hud { font-family: "Segoe UI", Arial, sans-serif; font-size: 11px; -webkit-font-smoothing: antialiased; gap: 7px; }
+.instrument[data-style="clear"] .hud-item + .hud-item::before { content: "|"; color: #e0e2e3; font-weight: 400; padding-right: 9px; }
+.instrument[data-style="clear"] .hud-value { font-weight: 750; }
+@media (min-width: 781px) and (max-width: 970px) {
+  .nav-toggle { display: block; }
+  .nav-links { display: none; position: absolute; top: 78px; left: 0; right: 0; padding: 20px 24px 25px; background: #111410; border-bottom: 1px solid var(--line); margin: 0; flex-direction: column; align-items: stretch; gap: 0; }
+  .nav-links[data-open="true"] { display: flex; }
+  .nav-links a { padding: 13px 7px; font-size: 16px; }
+  .nav-links .nav-source { margin: 10px 0 0; text-align: center; }
+}

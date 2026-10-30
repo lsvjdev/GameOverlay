@@ -70,3 +70,10 @@ input[type="range"]:disabled { cursor: not-allowed; opacity: .35; }
 .preview-bottom a { color: var(--acid); text-underline-offset: 4px; }
 @media(max-width: 1070px) { .playground-grid { grid-template-columns: 1fr; } .settings-panel { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); } .panel-head { grid-column: 1 / -1; } .panel-section:nth-child(2n) { border-right: 1px solid #354035; } }
 @media(max-width: 590px) { .preview-intro { padding: 57px 0 36px; } .playground { padding-top: 24px; } .settings-panel { display: block; } .panel-section { border-right: 0 !important; } .scene-controls .eyebrow { flex-basis: 100%; } .scene-button { flex: 1; } .demo-hud { font-size: 8px; column-gap: 6px; } .game-foot { flex-direction: column; gap: 3px; } .preview-bottom { grid-template-columns: 1fr; } }
+
+/* Transparent demo matches the native separated white layout. */
+.game-screen[data-style="clear"] .demo-hud { font-family: "Segoe UI", Arial, sans-serif; font-size: 12px; font-weight: 400; -webkit-font-smoothing: antialiased; gap: 8px; }
+.game-screen[data-style="clear"] .demo-hud .metric { gap: 4px; align-items: baseline; }
+.game-screen[data-style="clear"] .demo-hud .metric + .metric::before { content: "|"; margin-right: 9px; color: rgba(255,255,255,.85); font-weight: 400; }
+.game-screen[data-style="clear"] .demo-hud .value { font-weight: 750; }
+@media (max-width: 590px) { .game-screen[data-style="clear"] .demo-hud { font-size: 9px; column-gap: 5px; } .game-screen[data-style="clear"] .demo-hud .metric + .metric::before { margin-right: 3px; } }

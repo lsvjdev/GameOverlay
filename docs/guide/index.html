@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0e110f">
+  <meta name="description" content="Install, run and troubleshoot Game Overlay's experimental native Windows build.">
+  <title>Setup guide | Game Overlay</title>
+  <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../styles.css">
+  <script src="../app.js" defer></script>
+  <meta property="og:title" content="Game Overlay | Setup guide">
+  <meta property="og:description" content="Run the experimental native Windows build. Setup, dependencies, shortcuts and troubleshooting.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://lsvjdev.github.io/GameOverlay/guide/">
+  <meta property="og:site_name" content="Game Overlay">
+  <meta property="og:image" content="https://lsvjdev.github.io/GameOverlay/assets/social-preview.jpg">
+  <meta property="og:image:type" content="image/jpeg">
+  <meta property="og:image:width" content="1280">
+  <meta property="og:image:height" content="640">
+  <meta property="og:image:alt" content="Game Overlay, a lightweight open-source Windows performance monitor, with an in-game metrics strip and settings window">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://lsvjdev.github.io/GameOverlay/assets/social-preview.jpg">
+  <link rel="canonical" href="https://lsvjdev.github.io/GameOverlay/guide/">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <div class="wrap header-inner">
+      <a class="brand" href="../" aria-label="Game Overlay home">
+        <img class="brand-logo" src="../favicon.svg" alt="" aria-hidden="true" width="30" height="30">
+        game overlay<span style="color:var(--acid)">.</span>
+      </a>
+      <button class="nav-toggle" aria-label="Open navigation" aria-expanded="false" aria-controls="site-navigation">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M2 6H18M2 14H18" stroke="currentColor" stroke-width="1.7"/></svg>
+      </button>
+      <nav class="nav-links" id="site-navigation" aria-label="Main navigation" data-open="false">
+        <a href="../#features">Features</a>
+        <a href="../preview/">Preview</a>
+        <a href="../guide/" aria-current="page">Setup guide</a>
+        <a href="../changelog/">Changelog</a>
+        <a href="../licenses/">Licenses</a>
+        <a class="nav-source" href="https://github.com/lsvjdev/GameOverlay" target="_blank" rel="noopener noreferrer">GitHub ↗</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <div class="internal-hero">
+      <div class="wrap">
+        <div class="eyebrow">DOCUMENTATION / 001</div>
+        <h1>Get it running.</h1>
+        <p>Everything you need to know about the native development build. No installer wizard, no account, and no official stable native release just yet.</p>
+        <div class="tag-list">WINDOWS X64 / EXPERIMENTAL / C++</div>
+      </div>
+    </div>
+
+    <div class="paper">
+      <div class="wrap doc-layout">
+        <aside class="doc-aside" aria-label="On this page">
+          <span>ON THIS PAGE</span>
+          <a href="#status">Before you start</a>
+          <a href="#install">Run the dev build</a>
+          <a href="#layout">Files and dependencies</a>
+          <a href="#shortcuts">Keyboard shortcuts</a>
+          <a href="#troubleshooting">Troubleshooting</a>
+          <a href="#privacy">Privacy and settings</a>
+        </aside>
+
+        <article class="doc-article">
+          <section id="status">
+            <h2>Before you start</h2>
+            <p>Game Overlay's newer native C++ version is in active development. It has been tested on Windows in selected games, but compatibility and sensor availability can vary. There is currently <strong>no official stable native release</strong> on GitHub.</p>
+            <div class="note">
+              <strong>Two different app versions exist.</strong>
+              <p>The older <a href="https://github.com/lsvjdev/GameOverlay/tree/main">main branch</a> contains the .NET / RTSS prototype. The <a href="https://github.com/lsvjdev/GameOverlay/tree/dev">dev branch</a> contains the experimental native C++ version described here.</p>
+            </div>
+            <p>The native executable requests administrator privileges. Use only builds you trust and inspect the source if you want to understand how hardware access is handled.</p>
+          </section>
+
+          <section id="install">
+            <h2>Run the dev build</h2>
+            <ol>
+              <li>Open the <a href="https://github.com/lsvjdev/GameOverlay/tree/dev">development branch</a> on GitHub.</li>
+              <li>On a Windows PC with Visual Studio 2022 C++ build tools, use <code>native\build.cmd</code> to build the executable. The AppVeyor project additionally assembles the portable ZIP with the supporting files.</li>
+              <li>If you're using an AppVeyor artifact, extract the <strong>entire ZIP</strong>. Keep the <code>bin</code> directory beside the executable.</li>
+              <li>Run <code>GameOverlayDev.exe</code> and accept the Windows UAC prompt if you trust the build.</li>
+              <li>Double-click the tray icon to open settings, or right-click it for the menu.</li>
+            </ol>
+            <p>AppVeyor artifacts are development build outputs, not signed consumer releases. We aren't offering a direct installer or public download button until the release process is ready.</p>
+          </section>
+
+          <section id="layout">
+            <h2>What is inside the ZIP?</h2>
+            <p>The portable folder has one launcher and one support directory:</p>
+            <pre><code>GameOverlayDev.exe
+bin/
+  PresentMon-2.4.1-x64.exe
+  modules/
+    AMDFamily17.bin
+  licenses/
+    LICENSE
+    THIRD-PARTY-NOTICES.md
+    PresentMon-LICENSE.txt
+    PawnIO-Modules-LICENSE.txt
+    PawnIO-Modules-SOURCE.txt</code></pre>
+            <h3>How the pieces fit together</h3>
+            <ul>
+              <li><strong>GameOverlayDev.exe</strong> draws the overlay and settings using native Windows APIs. The native build doesn't require .NET or RTSS.</li>
+              <li><strong>PresentMon</strong> is the included frame collector needed for FPS readings. It runs as a separate process while the overlay is active.</li>
+              <li><strong>NVIDIA NVML</strong> is provided by a compatible NVIDIA driver and used for supported GPU readings.</li>
+              <li><strong>PawnIO</strong> must be installed separately for supported AMD CPU temperature readings. The ZIP includes an AMD sensor module, not the PawnIO driver or DLL.</li>
+              <li><strong>License files</strong> are included for redistribution and are also accessible from the app's About section.</li>
+            </ul>
+            <p>Without the supporting sensor components, some statistics may display <code>--</code>. The overlay and basic Windows metrics can still work.</p>
+          </section>
+
+          <section id="shortcuts">
+            <h2>Shortcuts</h2>
+            <ul>
+              <li><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>O</kbd> : show or hide the overlay.</li>
+              <li><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>D</kbd> : copy in-memory diagnostic details.</li>
+              <li><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>Q</kbd> : exit the application.</li>
+            </ul>
+            <p>Settings let you choose which metrics appear, reorder them, select a position and switch between dark-strip and transparent display styles.</p>
+          </section>
+
+          <section id="troubleshooting">
+            <h2>When something reads <code>--</code></h2>
+            <h3>FPS is missing</h3>
+            <p>Check that PresentMon is inside <code>bin</code>, that the game window is active and that the game is producing supported frame presentation events. Press the diagnostic shortcut to see whether the collector started, detected the CSV header and matched the foreground process.</p>
+            <h3>GPU temperature is missing</h3>
+            <p>The first native GPU backend uses NVIDIA NVML. It isn't a universal GPU monitoring implementation, and individual readings depend on the graphics driver and hardware.</p>
+            <h3>CPU temperature is missing</h3>
+            <p>Supported AMD readings use PawnIO and the included sensor module. Administrator access alone isn't sufficient if the separately installed driver or library is missing.</p>
+            <h3>Overlay appears over an ordinary application</h3>
+            <p>“Only while gaming” currently checks FPS data and excludes some common desktop applications. It's a heuristic, not a definitive game detector, so false positives remain possible.</p>
+            <p>If you encounter a bug, please <a href="https://github.com/lsvjdev/GameOverlay/issues/new/choose">open a GitHub issue</a> and include only the diagnostic information you're comfortable sharing.</p>
+          </section>
+
+          <section id="privacy">
+            <h2>What gets saved?</h2>
+            <p>Preferences are stored locally at <code>%LOCALAPPDATA%\GameOverlay\settings.ini</code>. The app doesn't maintain a database of your game sessions, hardware readings or FPS history, and doesn't send telemetry to a remote server.</p>
+            <p>Diagnostic reports are generated in memory and copied to your clipboard only when you request them. The static website doesn't load an analytics SDK, cookies or external fonts either.</p>
+            <p>Want to read the code? Everything is in the <a href="https://github.com/lsvjdev/GameOverlay">public repository</a>.</p>
+          </section>
+        </article>
+      </div>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <div class="footer-grid">
+        <span>GAME OVERLAY / MADE TO STAY SMALL.</span>
+        <nav class="footer-links" aria-label="Footer navigation">
+          <a href="../">Home</a><a href="../changelog/">Changelog</a>
+        <a href="../licenses/">Licenses</a>
+          <a href="https://github.com/lsvjdev/GameOverlay/issues">Issues ↗</a>
+          <a href="https://github.com/lsvjdev/GameOverlay">GitHub ↗</a>
+        </nav>
+      </div>
+      <p class="footer-note">© 2026 Game Overlay contributors. Independent open-source project.</p>
+    </div>
+  </footer>
+</body>
+</html>

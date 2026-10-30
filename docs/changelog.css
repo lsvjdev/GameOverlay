@@ -1,0 +1,57 @@
+.history-highlights { padding-block: 98px 108px; }
+.highlights-intro { display: grid; grid-template-columns: 1fr minmax(300px, 480px); gap: 50px; align-items: end; margin-bottom: 52px; }
+.highlights-intro .section-title { margin-top: 18px; }
+.highlights-intro p { margin: 0 0 6px; color: #4e584a; font-size: 17px; line-height: 1.6; }
+.highlights-intro code { font: .85em var(--mono); color: #47613b; }
+.history-list { border-top: 1px solid #9ca997; }
+.history-entry { display: grid; grid-template-columns: 140px minmax(0, 1fr) 106px; gap: 28px; align-items: start; padding: 29px 0; border-bottom: 1px solid #b1bcac; }
+.history-entry time { color: #5b6b54; font: 11px/1.6 var(--mono); padding-top: 4px; }
+.history-entry h3 { margin: 8px 0 0; font-weight: 580; font-size: clamp(19px, 2.2vw, 25px); line-height: 1.38; letter-spacing: -.028em; max-width: 790px; }
+.history-entry p { margin: 10px 0 0; line-height: 1.6; color: #586557; }
+.history-kind { font: 10px/1.5 var(--mono); letter-spacing: .055em; color: #538044; }
+.history-entry > a { justify-self: end; padding: 7px 0; color: #2e5930; font: 12px/1.45 var(--mono); text-decoration: none; white-space: nowrap; border-bottom: 1px solid #90a288; }
+.history-entry > a:hover { color: #122f0f; border-color: #122f0f; }
+.all-history { padding: 100px 0 115px; }
+.history-head { display: grid; grid-template-columns: 1fr auto; gap: 20px; align-items: end; margin-bottom: 40px; }
+.history-head .section-title { margin-top: 16px; }
+.history-head p { color: #9ba997; margin: 18px 0 0; font-size: 17px; line-height: 1.65; }
+.history-external { font: 12px var(--mono); color: var(--acid); text-underline-offset: 5px; margin-bottom: 9px; }
+.history-tabs { display: flex; border-top: 1px solid #495648; border-bottom: 1px solid #495648; }
+.history-tabs button { appearance: none; cursor: pointer; border: 0; border-bottom: 3px solid transparent; color: #a9b6a5; background: transparent; font-size: 15px; text-align: left; padding: 22px 35px 19px 0; margin-right: 34px; }
+.history-tabs button span { display: inline-block; padding-left: 8px; font: 11px var(--mono); color: #778b72; }
+.history-tabs button[aria-pressed="true"] { color: #f6fbf3; border-color: var(--acid); font-weight: 650; }
+.history-tabs button[aria-pressed="true"] span { color: var(--acid); }
+.history-tabs button:hover { color: #eff9e8; }
+.history-status { padding: 20px 0; font: 12px/1.6 var(--mono); color: #9aa997; }
+.commit-list { margin: 0; padding: 0; list-style: none; border-top: 1px solid #283629; }
+.commit-list:empty { border: 0; }
+.commit-list li { display: grid; grid-template-columns: 120px minmax(0, 1fr) 110px; align-items: baseline; gap: 22px; padding: 19px 0; border-bottom: 1px solid #2e3b2e; }
+.commit-list time { color: #7f987b; font: 11px var(--mono); }
+.commit-title { font-size: 15px; line-height: 1.55; color: #e1e8dd; overflow-wrap: anywhere; }
+.commit-title span { display: inline-block; color: #8bba85; font: 11px var(--mono); min-width: 52px; }
+.commit-list a { color: var(--acid); font: 12px var(--mono); justify-self: end; text-decoration: none; border-bottom: 1px solid #536e4f; padding-bottom: 3px; }
+.commit-list a:hover { border-color: var(--acid); }
+.history-load { text-align: center; padding: 25px 0 8px; }
+.history-load button { cursor: pointer; background: transparent; border: 1px solid #657b61; color: #d6e8d0; padding: 15px 30px; font: 13px var(--mono); }
+.history-load button:not(:disabled):hover { background: var(--acid); border-color: var(--acid); color: #121812; }
+.history-load button:disabled { opacity: .45; cursor: wait; }
+.history-load button[hidden] { display: none; }
+.history-fineprint { margin: 25px 0 0; color: #7c9179; max-width: 770px; font: 12px/1.75 var(--mono); }
+.history-fineprint a { color: #b0d4a7; }
+@media(max-width: 850px) {
+  .highlights-intro { grid-template-columns: 1fr; gap: 18px; }
+  .history-entry { grid-template-columns: 120px minmax(0,1fr); gap: 15px; }
+  .history-entry > a { grid-column: 2; justify-self: start; }
+}
+@media(max-width: 580px) {
+  .history-highlights { padding-block: 65px 80px; }
+  .all-history { padding-block: 72px; }
+  .history-entry { grid-template-columns: 1fr; gap: 10px; }
+  .history-entry > a { grid-column: 1; }
+  .history-head { grid-template-columns: 1fr; gap: 18px; }
+  .history-tabs { flex-wrap: wrap; }
+  .history-tabs button { flex: 1 1 100%; width: 100%; margin-right: 0; border-bottom-width: 2px; padding: 14px 0; }
+  .commit-list li { grid-template-columns: 1fr auto; gap: 8px; }
+  .commit-list time { grid-column: 1 / -1; }
+  .commit-list a { grid-column: 2; grid-row: 2; }
+}

@@ -23,7 +23,7 @@
       if (event.key === "Escape") setOpen(false);
     });
 
-    window.matchMedia("(min-width: 781px)").addEventListener("change", (event) => {
+    window.matchMedia("(min-width: 971px)").addEventListener("change", (event) => {
       if (event.matches) setOpen(false);
     });
   }

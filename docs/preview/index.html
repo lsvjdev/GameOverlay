@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#0e110f">
+  <meta name="description" content="Try Game Overlay on real game screenshots. Change metrics, position and display style in the interactive preview.">
+  <title>Interactive preview | Game Overlay</title>
+  <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="../playground.css">
+  <script src="../app.js" defer></script>
+  <script src="../playground.js" defer></script>
+  <meta property="og:title" content="Game Overlay | Interactive preview">
+  <meta property="og:description" content="See Game Overlay in action. Try the dark strip, transparent text, screen positions and metric layouts.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://lsvjdev.github.io/GameOverlay/preview/">
+  <meta property="og:site_name" content="Game Overlay">
+  <meta property="og:image" content="https://lsvjdev.github.io/GameOverlay/assets/social-preview.jpg">
+  <meta property="og:image:type" content="image/jpeg">
+  <meta property="og:image:width" content="1280">
+  <meta property="og:image:height" content="640">
+  <meta property="og:image:alt" content="Game Overlay, a lightweight open-source Windows performance monitor, with an in-game metrics strip and settings window">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://lsvjdev.github.io/GameOverlay/assets/social-preview.jpg">
+  <link rel="canonical" href="https://lsvjdev.github.io/GameOverlay/preview/">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a class="brand" href="../" aria-label="Game Overlay home"><img class="brand-logo" src="../favicon.svg" alt="" aria-hidden="true" width="30" height="30">game overlay<span style="color:var(--acid)">.</span></a>
+    <button class="nav-toggle" aria-label="Open navigation" aria-expanded="false" aria-controls="site-navigation"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M2 6H18M2 14H18" stroke="currentColor" stroke-width="1.7"/></svg></button>
+    <nav class="nav-links" id="site-navigation" aria-label="Main navigation">
+      <a href="../#features">Features</a>
+      <a href="../preview/" aria-current="page">Preview</a>
+      <a href="../guide/">Setup guide</a>
+      <a href="../changelog/">Changelog</a>
+        <a href="../licenses/">Licenses</a>
+      <a class="nav-source" href="https://github.com/lsvjdev/GameOverlay" target="_blank" rel="noopener noreferrer">GitHub ↗</a>
+    </nav>
+  </div>
+</header>
+<main id="main">
+  <section class="preview-intro">
+    <div class="wrap">
+      <div class="eyebrow">INTERACTIVE / 001</div>
+      <h1>See it in context.</h1>
+      <p>Real screenshots, your choice of overlay. Try different layouts, switch games and decide which numbers deserve a place on your screen.</p>
+    </div>
+  </section>
+  <section class="playground">
+    <div class="wrap">
+      <div class="playground-grid">
+        <div class="preview-main">
+          <div class="scene-controls" role="group" aria-label="Game screenshot">
+            <span class="eyebrow">CHOOSE A GAME</span>
+            <button class="scene-button" data-scene="wuwa" aria-pressed="true" type="button">Wuthering Waves</button>
+            <button class="scene-button" data-scene="zzz" aria-pressed="false" type="button">Zenless Zone Zero</button>
+            <button class="scene-button" data-scene="minecraft" aria-pressed="false" type="button">Minecraft</button>
+          </div>
+          <div class="game-screen" id="game-screen" data-scene="wuwa" data-style="strip" data-position="tl" style="--bar-opacity:.92">
+            <div class="game-scene" role="img" aria-label="Wuthering Waves gameplay screenshot"></div>
+            <div id="demo-hud" class="demo-hud" aria-label="Illustrative performance overlay"></div>
+          </div>
+          <div class="game-foot">
+            <span>ALL IMAGES CAPTURED IN-GAME BY THE PROJECT CREATOR.</span>
+            <span><strong>DEMO DATA</strong> / NOT LIVE HARDWARE READINGS</span>
+          </div>
+        </div>
+        <aside class="settings-panel" aria-labelledby="controls-title">
+          <div class="panel-head"><span>PREVIEW CONTROLS</span><h2 id="controls-title">Make it yours.</h2></div>
+          <div class="panel-section">
+            <h3>Display style</h3>
+            <div class="toggle-buttons" role="group" aria-label="Display style">
+              <button class="control-button" type="button" data-style="strip" aria-pressed="true">Dark strip</button>
+              <button class="control-button" type="button" data-style="clear" aria-pressed="false">Transparent</button>
+            </div>
+          </div>
+          <div class="panel-section">
+            <h3>Position</h3>
+            <div class="position-grid" role="group" aria-label="Overlay position">
+              <button class="pos-button" aria-label="Top left" data-position="tl" aria-pressed="true"><svg width="25" height="19" viewBox="0 0 25 19" aria-hidden="true"><rect x="1" y="1" width="9" height="5"/><path d="M1 1h23v17H1z" fill="none" stroke="currentColor" stroke-width="1"/></svg></button>
+              <button class="pos-button" aria-label="Top center" data-position="tc" aria-pressed="false"><svg width="25" height="19" viewBox="0 0 25 19" aria-hidden="true"><rect x="8" y="1" width="9" height="5"/><path d="M1 1h23v17H1z" fill="none" stroke="currentColor" stroke-width="1"/></svg></button>
+              <button class="pos-button" aria-label="Top right" data-position="tr" aria-pressed="false"><svg width="25" height="19" viewBox="0 0 25 19" aria-hidden="true"><rect x="15" y="1" width="9" height="5"/><path d="M1 1h23v17H1z" fill="none" stroke="currentColor" stroke-width="1"/></svg></button>
+              <button class="pos-button" aria-label="Bottom left" data-position="bl" aria-pressed="false"><svg width="25" height="19" viewBox="0 0 25 19" aria-hidden="true"><rect x="1" y="13" width="9" height="5"/><path d="M1 1h23v17H1z" fill="none" stroke="currentColor" stroke-width="1"/></svg></button>
+              <button class="pos-button" aria-label="Bottom center" data-position="bc" aria-pressed="false"><svg width="25" height="19" viewBox="0 0 25 19" aria-hidden="true"><rect x="8" y="13" width="9" height="5"/><path d="M1 1h23v17H1z" fill="none" stroke="currentColor" stroke-width="1"/></svg></button>
+              <button class="pos-button" aria-label="Bottom right" data-position="br" aria-pressed="false"><svg width="25" height="19" viewBox="0 0 25 19" aria-hidden="true"><rect x="15" y="13" width="9" height="5"/><path d="M1 1h23v17H1z" fill="none" stroke="currentColor" stroke-width="1"/></svg></button>
+            </div>
+          </div>
+          <div class="panel-section" id="opacity-section">
+            <div class="range-row"><h3 style="margin:0">Dark strip opacity</h3><output id="opacity-label" for="opacity-range">92%</output></div>
+            <input type="range" id="opacity-range" min="0" max="100" value="92" step="1" aria-label="Dark strip opacity">
+            <p class="panel-hint" id="opacity-hint">Text stays opaque. Adjust the background only.</p>
+          </div>
+          <div class="panel-section">
+            <h3>Metrics and order</h3>
+            <div class="metric-controls" id="metric-controls" aria-label="Metric visibility and order"></div>
+            <p class="panel-hint">Toggle a metric or use arrows to reorder it.</p>
+          </div>
+        </aside>
+      </div>
+      <div class="preview-bottom">
+        <div><span class="eyebrow">NO INSTALL REQUIRED</span><p>This playground is just a website demo. It doesn't inspect your computer or collect any system information.</p></div>
+        <div><span class="eyebrow">READY TO TRY THE APP?</span><p>Game Overlay is still in active development. <a href="../guide/">Read the setup guide</a> or <a href="https://github.com/lsvjdev/GameOverlay/tree/dev">browse the source on GitHub</a>.</p></div>
+      </div>
+    </div>
+  </section>
+</main>
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="footer-grid">
+      <span>GAME OVERLAY / MADE TO STAY SMALL.</span>
+      <nav class="footer-links" aria-label="Footer navigation"><a href="../">Home</a><a href="../guide/">Setup</a><a href="../changelog/">Changelog</a>
+        <a href="../licenses/">Licenses</a><a href="https://github.com/lsvjdev/GameOverlay/issues">Issues ↗</a><a href="https://github.com/lsvjdev/GameOverlay">GitHub ↗</a></nav>
+    </div>
+    <p class="footer-note">© 2026 Game Overlay contributors. Screenshots provided by the project creator. Game assets belong to their respective rights holders.</p>
+  </div>
+</footer>
+</body>
+</html>

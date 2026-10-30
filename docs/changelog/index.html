@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0e110f">
+  <meta name="description" content="Game Overlay development changelog. Read the latest changes and browse every GitHub commit from dev, main and the website.">
+  <title>Changelog | Game Overlay</title>
+  <link rel="canonical" href="https://lsvjdev.github.io/GameOverlay/changelog/">
+  <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="../changelog.css">
+  <script defer src="../app.js"></script>
+  <script defer src="../changelog.js"></script>
+  <meta property="og:site_name" content="Game Overlay">
+  <meta property="og:title" content="Game Overlay | Changelog">
+  <meta property="og:description" content="Follow native development, fixes and website updates. Every commit links back to its source on GitHub.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://lsvjdev.github.io/GameOverlay/changelog/">
+  <meta property="og:image" content="https://lsvjdev.github.io/GameOverlay/assets/social-preview.jpg">
+  <meta property="og:image:type" content="image/jpeg">
+  <meta property="og:image:width" content="1280">
+  <meta property="og:image:height" content="640">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://lsvjdev.github.io/GameOverlay/assets/social-preview.jpg">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <div class="wrap header-inner">
+      <a class="brand" href="../" aria-label="Game Overlay home">
+        <img class="brand-logo" src="../favicon.svg" alt="" aria-hidden="true" width="30" height="30">
+        game overlay<span style="color:var(--acid)">.</span>
+      </a>
+      <button class="nav-toggle" aria-label="Open navigation" aria-expanded="false" aria-controls="site-navigation">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M2 6H18M2 14H18" stroke="currentColor" stroke-width="1.7"/></svg>
+      </button>
+      <nav class="nav-links" id="site-navigation" aria-label="Main navigation" data-open="false">
+        <a href="../#features">Features</a>
+        <a href="../preview/">Preview</a>
+        <a href="../guide/">Setup guide</a>
+        <a href="../changelog/" aria-current="page">Changelog</a>
+        <a href="../licenses/">Licenses</a>
+        <a class="nav-source" href="https://github.com/lsvjdev/GameOverlay" target="_blank" rel="noopener noreferrer">GitHub ↗</a>
+      </nav>
+    </div>
+  </header>
+  <main id="main">
+    <section class="internal-hero">
+      <div class="wrap">
+        <div class="eyebrow">PROJECT LOG / UPDATED THROUGH GIT</div>
+        <h1>What changed.</h1>
+        <p>Fixes, new features and small improvements. No inflated release notes, just the work we're doing and the commits behind it.</p>
+        <div class="tag-list">DEV BRANCH / EXPERIMENTAL / NO OFFICIAL NATIVE RELEASE YET</div>
+      </div>
+    </section>
+
+    <section class="paper history-highlights" aria-labelledby="highlights-title">
+      <div class="wrap">
+        <div class="highlights-intro">
+          <div>
+            <div class="eyebrow">01 / RECENT HIGHLIGHTS</div>
+            <h2 class="section-title" id="highlights-title">Built in public.</h2>
+          </div>
+          <p>Human-readable highlights from real <code>dev</code> commits. These changes have been committed, but not every new Windows rendering change has been tested in a packaged build yet.</p>
+        </div>
+        <div class="history-list">
+          <article class="history-entry">
+            <time datetime="2026-10-30">30 OCT 2026</time>
+            <div>
+              <span class="history-kind">FIX / DISPLAY</span>
+              <h3>Improved settings repainting, restored the fixed window size and added smoother transparent text with bold values and separators.</h3>
+              <p>Updated the native rendering path. The Windows build still needs verification.</p>
+            </div>
+            <a href="https://github.com/lsvjdev/GameOverlay/commit/e1d4341a6fb7a599773eedb145088baf84b8b1ee" target="_blank" rel="noopener noreferrer" aria-label="View commit e1d4341">e1d4341 ↗</a>
+          </article>
+          <article class="history-entry">
+            <time datetime="2026-10-29">29 OCT 2026</time>
+            <div>
+              <span class="history-kind">FEATURE / SETTINGS</span>
+              <h3>Polished settings controls, added metric ordering and improved game detection.</h3>
+            </div>
+            <a href="https://github.com/lsvjdev/GameOverlay/commit/cc4dc255b714182aef8d401c864d68aca38c090e" target="_blank" rel="noopener noreferrer" aria-label="View commit cc4dc25">cc4dc25 ↗</a>
+          </article>
+          <article class="history-entry">
+            <time datetime="2026-10-29">29 OCT 2026</time>
+            <div>
+              <span class="history-kind">FEATURE / INTERFACE</span>
+              <h3>Added the native settings window and portable package layout.</h3>
+            </div>
+            <a href="https://github.com/lsvjdev/GameOverlay/commit/bb949a1b6a4df672d4d4d944127b79a1eb7291e8" target="_blank" rel="noopener noreferrer" aria-label="View commit bb949a1">bb949a1 ↗</a>
+          </article>
+          <article class="history-entry">
+            <time datetime="2026-10-29">29 OCT 2026</time>
+            <div>
+              <span class="history-kind">FEATURE / MONITORING</span>
+              <h3>Added AMD CPU temperature monitoring to the native build.</h3>
+            </div>
+            <a href="https://github.com/lsvjdev/GameOverlay/commit/634393d07dab4b2e97c549ed16a5644d55ccf0af" target="_blank" rel="noopener noreferrer" aria-label="View commit 634393d">634393d ↗</a>
+          </article>
+          <article class="history-entry">
+            <time datetime="2026-10-29">29 OCT 2026</time>
+            <div>
+              <span class="history-kind">FEATURE / HARDWARE</span>
+              <h3>Added native GPU monitoring and CPU clock readings.</h3>
+            </div>
+            <a href="https://github.com/lsvjdev/GameOverlay/commit/dd23ef9aa53169fe291de0f50c40e941aa4eafd1" target="_blank" rel="noopener noreferrer" aria-label="View commit dd23ef9">dd23ef9 ↗</a>
+          </article>
+          <article class="history-entry">
+            <time datetime="2026-10-29">29 OCT 2026</time>
+            <div>
+              <span class="history-kind">FEATURE / FPS</span>
+              <h3>Improved frame sampling and tracking of the active game process.</h3>
+            </div>
+            <a href="https://github.com/lsvjdev/GameOverlay/commit/4c394d5f9806eb8da25d2e55bab2cacd6ec9b268" target="_blank" rel="noopener noreferrer" aria-label="View commit 4c394d5">4c394d5 ↗</a>
+          </article>
+          <article class="history-entry">
+            <time datetime="2026-10-29">29 OCT 2026</time>
+            <div>
+              <span class="history-kind">FEATURE / FPS</span>
+              <h3>Added PresentMon-powered FPS monitoring to the native version.</h3>
+            </div>
+            <a href="https://github.com/lsvjdev/GameOverlay/commit/bf094e43f09fd0f33b2281b815677c9590b26cb9" target="_blank" rel="noopener noreferrer" aria-label="View commit bf094e4">bf094e4 ↗</a>
+          </article>
+          <article class="history-entry">
+            <time datetime="2026-10-29">29 OCT 2026</time>
+            <div>
+              <span class="history-kind">MILESTONE / NATIVE</span>
+              <h3>Started the standalone native C++ overlay prototype.</h3>
+            </div>
+            <a href="https://github.com/lsvjdev/GameOverlay/commit/9e789b8b2ebda4e3ffda23a9ae45e526930f45be" target="_blank" rel="noopener noreferrer" aria-label="View commit 9e789b8">9e789b8 ↗</a>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="all-history" aria-labelledby="all-history-title" id="commits">
+      <div class="wrap">
+        <div class="history-head">
+          <div>
+            <div class="eyebrow">02 / SOURCE OF TRUTH</div>
+            <h2 class="section-title" id="all-history-title">Every commit.</h2>
+            <p>Browse the complete Git history, newest first. Each entry links directly to the change on GitHub.</p>
+          </div>
+          <a class="history-external" id="history-external" href="https://github.com/lsvjdev/GameOverlay/commits/dev/">Open on GitHub ↗</a>
+        </div>
+        <div class="history-tabs" role="group" aria-label="Repository branch">
+          <button type="button" data-branch="dev" aria-pressed="true">Native dev <span>dev</span></button>
+          <button type="button" data-branch="main" aria-pressed="false">Original app <span>main</span></button>
+          <button type="button" data-branch="gh-pages" aria-pressed="false">Website <span>gh-pages</span></button>
+        </div>
+        <div class="history-status" id="history-status" role="status" aria-live="polite">Loading commit history from GitHub…</div>
+        <ol class="commit-list" id="commit-list" aria-label="GitHub commits"></ol>
+        <div class="history-load">
+          <button id="load-more" type="button" hidden>Load older commits ↓</button>
+        </div>
+        <p class="history-fineprint">Commit history comes directly from GitHub's public API. This page doesn't run analytics, store the results or track visitors. <a href="https://github.com/lsvjdev/GameOverlay/commits/dev/">GitHub history is always available</a> if the API is rate-limited.</p>
+      </div>
+    </section>
+  </main>
+  <footer class="site-footer">
+    <div class="wrap">
+      <div class="footer-grid">
+        <span>GAME OVERLAY / MADE TO STAY SMALL.</span>
+        <nav class="footer-links" aria-label="Footer navigation">
+          <a href="../">Home</a>
+          <a href="../preview/">Preview</a>
+          <a href="../guide/">Setup</a>
+          <a href="../licenses/">Licenses</a>
+          <a href="https://github.com/lsvjdev/GameOverlay/issues">Issues ↗</a>
+          <a href="https://github.com/lsvjdev/GameOverlay">GitHub ↗</a>
+        </nav>
+      </div>
+      <p class="footer-note">© 2026 Game Overlay contributors. Native build is experimental; no official stable native release yet.</p>
+    </div>
+  </footer>
+</body>
+</html>
