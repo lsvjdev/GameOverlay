@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#0e110f">
-  <meta name="description" content="Game Overlay development changelog. Read the latest changes and browse every GitHub commit from dev, main and the website.">
+  <meta name="description" content="Game Overlay development changelog. Read project highlights and browse relevant commits for the native app, original app, and website.">
   <title>Changelog | Game Overlay</title>
   <link rel="canonical" href="https://lsvjdev.github.io/GameOverlay/changelog/">
   <link rel="icon" type="image/svg+xml" href="../favicon.svg">
@@ -139,8 +139,8 @@
         <div class="history-head">
           <div>
             <div class="eyebrow">02 / SOURCE OF TRUTH</div>
-            <h2 class="section-title" id="all-history-title">Every commit.</h2>
-            <p>Browse the complete Git history, newest first. Each entry links directly to the change on GitHub.</p>
+            <h2 class="section-title" id="all-history-title">Commit history.</h2>
+            <p>Each tab shows changes relevant to that part of the project, newest first, with direct links to GitHub.</p>
           </div>
           <a class="history-external" id="history-external" href="https://github.com/lsvjdev/GameOverlay/commits/dev/">Open on GitHub ↗</a>
         </div>
@@ -149,12 +149,13 @@
           <button type="button" data-branch="main" aria-pressed="false">Original app <span>main</span></button>
           <button type="button" data-branch="gh-pages" aria-pressed="false">Website <span>gh-pages</span></button>
         </div>
+        <p class="history-scope" id="history-scope">Only commits changing native/ (the experimental C++ app).</p>
         <div class="history-status" id="history-status" role="status" aria-live="polite">Loading commit history from GitHub…</div>
         <ol class="commit-list" id="commit-list" aria-label="GitHub commits"></ol>
         <div class="history-load">
           <button id="load-more" type="button" hidden>Load older commits ↓</button>
         </div>
-        <p class="history-fineprint">Commit history comes directly from GitHub's public API. This page doesn't run analytics, store the results or track visitors. <a href="https://github.com/lsvjdev/GameOverlay/commits/dev/">GitHub history is always available</a> if the API is rate-limited.</p>
+        <p class="history-fineprint">Commit history is filtered by file path using GitHub's public API, without changing any branches or hiding commits on GitHub. This page doesn't run analytics, store the results or track visitors. <a href="https://github.com/lsvjdev/GameOverlay/commits/dev/">GitHub history is always available</a> if the API is rate-limited.</p>
       </div>
     </section>
   </main>

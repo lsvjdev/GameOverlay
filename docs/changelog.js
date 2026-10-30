@@ -8,7 +8,28 @@
   const buttons = [...document.querySelectorAll("[data-branch]")];
   if (!history || !status || !more || !sourceLink) return;
 
-  const branches = ["dev", "main", "gh-pages"];
+  const filters = {
+    dev: {
+      path: "native",
+      label: "native/ on dev",
+      description: "Only commits changing native/ (the experimental C++ app).",
+      url: "https://github.com/lsvjdev/GameOverlay/commits/dev/native/"
+    },
+    main: {
+      path: null,
+      label: "main",
+      description: "The original application's full main branch history.",
+      url: "https://github.com/lsvjdev/GameOverlay/commits/main/"
+    },
+    "gh-pages": {
+      path: "docs",
+      label: "docs/ on gh-pages",
+      description: "Only commits changing docs/ (our GitHub Pages website).",
+      url: "https://github.com/lsvjdev/GameOverlay/commits/gh-pages/docs/"
+    }
+  };
+  const branches = Object.keys(filters);
+  const scope = document.getElementById("history-scope");
   const pageSize = 50;
   let branch = "dev";
   let page = 1;
@@ -66,11 +87,13 @@
     more.hidden = true;
     const id = ++requestId;
     const activeBranch = branch;
+    const config = filters[activeBranch];
     controller = new AbortController();
-    setStatus("Loading " + activeBranch + " commits from GitHub…");
+    setStatus("Loading commits from " + config.label + "…");
 
     const endpoint = "https://api.github.com/repos/lsvjdev/GameOverlay/commits" +
       "?sha=" + encodeURIComponent(activeBranch) +
+      (config.path ? "&path=" + encodeURIComponent(config.path) : "") +
       "&per_page=" + pageSize + "&page=" + page;
 
     try {
@@ -91,8 +114,8 @@
       history.append(fragment);
 
       const count = history.children.length;
-      setStatus(count ? "Showing " + count + " commits from " + activeBranch + "." :
-        "No commits found for this branch.");
+      setStatus(count ? "Showing " + count + " matching commits from " + config.label + "." :
+        "No matching commits found for this selection.");
       page += 1;
       more.hidden = commits.length < pageSize;
       more.disabled = false;
@@ -120,7 +143,8 @@
     history.replaceChildren();
     more.hidden = true;
     more.textContent = "Load older commits ↓";
-    sourceLink.href = "https://github.com/lsvjdev/GameOverlay/commits/" + next + "/";
+    sourceLink.href = filters[next].url;
+    if (scope) scope.textContent = filters[next].description;
     buttons.forEach(button => {
       button.setAttribute("aria-pressed", String(button.dataset.branch === next));
     });
@@ -137,5 +161,5 @@
     }
   });
 
-  loadHistory();
+  selectBranch("dev");
 })();

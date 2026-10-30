@@ -55,3 +55,5 @@
   .commit-list time { grid-column: 1 / -1; }
   .commit-list a { grid-column: 2; grid-row: 2; }
 }
+
+.history-scope { margin: 20px 0 0; color: #b6d4ab; font: 12px/1.65 var(--mono); }
