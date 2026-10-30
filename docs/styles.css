@@ -37,14 +37,7 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--acid); outline-
   height: 78px; display: flex; align-items: center; gap: 35px;
 }
 .brand { display: inline-flex; align-items: center; text-decoration: none; gap: 12px; font-size: 20px; font-weight: 740; letter-spacing: -.055em; white-space: nowrap; }
-.brand-mark {
-  width: 30px; height: 30px; display: inline-grid; grid-template-columns: repeat(2, 1fr);
-  gap: 3px; padding: 6px; background: var(--acid); transform: rotate(-3deg);
-}
-.brand-mark i { background: #0b140b; display: block; }
-.brand-mark i:nth-child(2) { opacity: .45; }
-.brand-mark i:nth-child(3) { opacity: .7; }
-.brand-mark i:nth-child(4) { opacity: .9; }
+.brand-logo { display: block; width: 30px; height: 30px; flex: 0 0 30px; }
 .nav-links { display: flex; align-items: center; gap: 29px; margin-left: auto; }
 .nav-links a { color: #b6bdb3; font-size: 13px; font-weight: 550; text-decoration: none; transition: color .18s; }
 .nav-links a:hover, .nav-links a[aria-current="page"] { color: var(--acid); }
