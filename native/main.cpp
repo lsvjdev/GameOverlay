@@ -146,13 +146,24 @@ OverlayReadings CaptureOverlayReadings()
             return;
         if (!total)
         {
-            readings.Add(metric, L"--", L"888.8/888.8GB");
+            readings.Add(metric, L"--", L"--");
             return;
         }
+
+        const double totalGB = static_cast<double>(total) / 1024.0;
         swprintf_s(buffer, L"%.1f/%.1fGB",
-            static_cast<double>(used) / 1024.0,
-            static_cast<double>(total) / 1024.0);
-        readings.Add(metric, buffer, L"888.8/888.8GB");
+            static_cast<double>(used) / 1024.0, totalGB);
+
+        // Reserve only as many digits as the installed memory needs,
+        // rather than space for 888.8/888.8 GB on every device.
+        wchar_t capacity[32]{};
+        swprintf_s(capacity, L"%.1f", totalGB);
+        std::wstring widest(capacity);
+        for (auto& c : widest)
+            if (c >= L'0' && c <= L'9')
+                c = L'8';
+        const std::wstring reserve = widest + L"/" + widest + L"GB";
+        readings.Add(metric, buffer, reserve);
     };
 
     addMemory(MetricVram, gpuMetrics.UsedVramMiB(), gpuMetrics.TotalVramMiB());

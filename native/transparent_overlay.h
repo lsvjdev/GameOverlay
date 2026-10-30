@@ -66,6 +66,7 @@ public:
             Gdiplus::Font* font = nullptr;
             Gdiplus::SolidBrush* brush = nullptr;
             float x = 0;
+            bool separator = false;
         };
 
         std::array<Part, 32> parts{};
@@ -85,11 +86,21 @@ public:
         {
             if (count >= static_cast<int>(parts.size()))
                 return;
-            parts[count++] = {text, font, brush, x};
-            // Reserve a stable width for each individual reading. Digit
-            // changes should not move neighboring readings or the strip.
-            x += (std::max)(measureWidth(text, font),
-                            measureWidth(reserve, font));
+            parts[count++] = {text, font, brush, std::round(x), false};
+            // Rounded pixel positions keep each character's baseline stable,
+            // while static reservation prevents metric-width movement.
+            x += std::ceil((std::max)(measureWidth(text, font),
+                                     measureWidth(reserve, font)));
+        };
+
+        auto appendSeparator = [&]()
+        {
+            if (count >= static_cast<int>(parts.size()))
+                return;
+            // Use a fixed pixel rule instead of a resampled "|" glyph.
+            parts[count++] = {nullptr, nullptr, &separatorBrush,
+                              std::round(x), true};
+            x += 1.0f;
         };
 
         for (unsigned metric : settings.order)
@@ -102,7 +113,7 @@ public:
                 if (settings.transparent)
                 {
                     x += 9.0f;
-                    append(L"|", L"|", &regular, &separatorBrush);
+                    appendSeparator();
                     x += 9.0f;
                 }
                 else
@@ -186,8 +197,12 @@ public:
             for (int i = 0; i < count; ++i)
             {
                 const Part& part = parts[i];
-                painter.DrawString(part.text, -1, part.font,
-                    Gdiplus::PointF(part.x, 4.0f), &format, part.brush);
+                if (part.separator)
+                    painter.FillRectangle(&separatorBrush,
+                        static_cast<int>(part.x), 7, 1, 13);
+                else
+                    painter.DrawString(part.text, -1, part.font,
+                        Gdiplus::PointF(part.x, 4.0f), &format, part.brush);
             }
             painter.Flush();
         }

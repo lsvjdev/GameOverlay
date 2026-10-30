@@ -116,7 +116,7 @@ private:
         auto previous = SelectObject(dc, font);
         RECT rect{x, y, x + width, y + 31};
         DrawTextW(dc, text, -1, &rect,
-            DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
+            DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS | DT_NOPREFIX);
         SelectObject(dc, previous);
     }
 
@@ -128,7 +128,7 @@ private:
         auto previous = SelectObject(dc, font);
         RECT rect{x, y, x + width, y + 31};
         DrawTextW(dc, text, -1, &rect,
-            DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+            DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX);
         SelectObject(dc, previous);
     }
 
@@ -187,6 +187,29 @@ private:
         {
             Text(dc, value, right - 167, y + 19, 146, medium_, Accent);
         }
+    }
+
+    void DetailIcon(HDC dc, int x, int y, COLORREF color)
+    {
+        // Three understated adjustment rails: recognizable without
+        // adding a separate settings button to each metric.
+        HPEN pen = CreatePen(PS_SOLID, 1, color);
+        auto previous = SelectObject(dc, pen);
+        const int marks[]{x + 5, x + 12, x + 8};
+        for (int i = 0; i < 3; ++i)
+        {
+            const int rowY = y - 6 + 6 * i;
+            MoveToEx(dc, x, rowY, nullptr);
+            LineTo(dc, x + 17, rowY);
+            const int dot = marks[i];
+            HBRUSH brush = CreateSolidBrush(Panel);
+            auto oldBrush = SelectObject(dc, brush);
+            Ellipse(dc, dot - 2, rowY - 2, dot + 3, rowY + 3);
+            SelectObject(dc, oldBrush);
+            DeleteObject(brush);
+        }
+        SelectObject(dc, previous);
+        DeleteObject(pen);
     }
 
     static const wchar_t* MetricName(unsigned metric)
@@ -367,7 +390,7 @@ private:
         else if (page_ == 3)
         {
             for (int i = 0; i < 4; ++i)
-                if (y >= 256 + i * 49 && y < 300 + i * 49)
+                if (y >= 242 + i * 62 && y < 297 + i * 62)
                     return 500 + i;
         }
         return -1;
@@ -481,8 +504,8 @@ private:
                         enabled ? Primary : Secondary);
                     if (metric == MetricCpu || metric == MetricGpu ||
                         metric == MetricVram || metric == MetricRam)
-                        Text(dc, L"EDIT >", right - 165, y + 5, 58,
-                             small_, Accent);
+                        DetailIcon(dc, right - 140, y + 21,
+                            hoverZone_ == 300 + i ? Accent : Secondary);
 
                     Rounded(dc, {right - 100, y + 6, right - 61, y + 36},
                         i == 0 ? RGB(32, 34, 38) : RGB(47, 50, 57));
@@ -494,7 +517,7 @@ private:
                           i == 5 ? Secondary : Accent);
                 }
 
-                Text(dc, L"Checkbox: show/hide. Name: edit readings. Arrows: reorder.",
+                Text(dc, L"Checkbox: show/hide. Click a metric to customize. Arrows: reorder.",
                      214, 424, right - 230, small_, Secondary);
             }
         }
@@ -521,7 +544,7 @@ private:
                  231, 371, 270, small_, Secondary);
 
             if (settings_.transparent)
-                TextCenter(dc, L"N/A", right - 105, 351, 78, medium_, Secondary);
+                Text(dc, L"N/A", right - 167, 351, 146, medium_, Secondary);
             else
             {
                 const int startX = right - 260;
@@ -555,36 +578,55 @@ private:
         }
         else
         {
-            Rounded(dc, {212, 131, right, 244}, Panel);
-            Text(dc, L"Game Overlay", 231, 142, 310, heading_, Primary);
-            Text(dc, L"Native Windows overlay  |  GPL-3.0-only", 231, 178, 390,
-                 small_, Secondary);
+            Rounded(dc, {212, 131, right, 229}, Panel);
+            Text(dc, L"Game Overlay", 231, 137, 330, heading_, Primary);
+            Text(dc, L"Native Windows monitor  |  GPL-3.0-only  |  lsvjdev",
+                 231, 171, right - 255, small_, Secondary);
             const std::wstring version = std::wstring(L"Version: ") + GAMEOVERLAY_VERSION;
             const std::wstring revision = std::wstring(L"Revision: ") + GAMEOVERLAY_REVISION;
-            Text(dc, version.c_str(), 231, 207, 320, small_, Accent);
-            Text(dc, revision.c_str(), right - 202, 207, 181, small_, Secondary);
+            Text(dc, version.c_str(), 231, 195, 315, small_, Accent);
+            Text(dc, revision.c_str(), right - 205, 195, 185, small_, Secondary);
 
             const wchar_t* labels[] = {
                 L"GitHub repository", L"Official website",
-                L"Local licenses & credits", L"Report an issue"
+                L"Report a bug", L"Licenses & credits"
             };
             const wchar_t* notes[] = {
-                L"Source code and updates", L"Guides, changelog and documentation",
-                L"View bundled legal notices", L"Report bugs and suggest improvements"
+                L"Source code and development", L"Guides, changelog and documentation",
+                L"Report problems or request improvements",
+                L"Open the offline license and attribution files"
             };
             for (int i = 0; i < 4; ++i)
             {
-                const int y = 256 + i * 49;
-                Rounded(dc, {212, y, right, y + 44},
+                const int y = 242 + i * 62;
+                Rounded(dc, {212, y, right, y + 55},
                     hoverZone_ == 500 + i ? RGB(37, 40, 45) : Panel);
-                Text(dc, labels[i], 231, y + 2, 320, medium_, Primary);
-                Text(dc, notes[i], 231, y + 23, 370, small_, Secondary);
-                Text(dc, L"OPEN >", right - 79, y + 9, 65, small_, Accent);
+                Text(dc, labels[i], 231, y + 1, 360, medium_, Primary);
+                Text(dc, notes[i], 231, y + 26, right - 340,
+                     small_, Secondary);
+                // Minimal external-link glyph, rather than repeated "OPEN >".
+                const int bx = right - 42;
+                const int by = y + 20;
+                HPEN linkPen = CreatePen(PS_SOLID, 2, Accent);
+                auto oldPen = SelectObject(dc, linkPen);
+                MoveToEx(dc, bx + 9, by + 3, nullptr);
+                LineTo(dc, bx + 9, by + 12);
+                LineTo(dc, bx - 2, by + 12);
+                LineTo(dc, bx - 2, by + 3);
+                LineTo(dc, bx + 2, by + 3);
+                MoveToEx(dc, bx + 4, by + 1, nullptr);
+                LineTo(dc, bx + 12, by - 5);
+                MoveToEx(dc, bx + 6, by - 5, nullptr);
+                LineTo(dc, bx + 12, by - 5);
+                LineTo(dc, bx + 12, by + 1);
+                SelectObject(dc, oldPen);
+                DeleteObject(linkPen);
             }
         }
 
-        Text(dc, L"No telemetry or performance history is stored.",
-             214, area.bottom - 43, area.right - 235, small_, Secondary);
+        if (page_ != 3)
+            Text(dc, L"No telemetry or performance history is stored.",
+                 214, area.bottom - 43, area.right - 235, small_, Secondary);
     }
 
     void Update(bool persist = true)
@@ -692,20 +734,20 @@ private:
         }
         else if (page_ == 3)
         {
-            if (y >= 256 && y < 300)
+            if (y >= 242 && y < 297)
                 ShellExecuteW(window_, L"open",
                     L"https://github.com/lsvjdev/GameOverlay",
                     nullptr, nullptr, SW_SHOWNORMAL);
-            else if (y >= 305 && y < 349)
+            else if (y >= 304 && y < 359)
                 ShellExecuteW(window_, L"open",
                     L"https://lsvjdev.github.io/GameOverlay/",
                     nullptr, nullptr, SW_SHOWNORMAL);
-            else if (y >= 354 && y < 398)
-                OpenLocalLicenses();
-            else if (y >= 403 && y < 447)
+            else if (y >= 366 && y < 421)
                 ShellExecuteW(window_, L"open",
                     L"https://github.com/lsvjdev/GameOverlay/issues/new/choose",
                     nullptr, nullptr, SW_SHOWNORMAL);
+            else if (y >= 428 && y < 483)
+                OpenLocalLicenses();
         }
     }
 
