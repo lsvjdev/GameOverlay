@@ -280,3 +280,7 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--acid); outline-
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
 }
+
+/* Preserve the user's real game screenshot in the homepage preview. */
+.instrument-viewport::before { display: none; }
+.instrument-viewport::after { color: #dde0d7; text-shadow: 0 1px 3px #111; }
