@@ -42,8 +42,8 @@ public:
 
         window_ = CreateWindowExW(
             WS_EX_APPWINDOW, cls.lpszClassName, L"Game Overlay - Settings",
-            WS_OVERLAPPEDWINDOW,
-            CW_USEDEFAULT, CW_USEDEFAULT, 860, 650,
+            WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX,
+            CW_USEDEFAULT, CW_USEDEFAULT, 810, 540,
             nullptr, nullptr, cls.hInstance, this);
 
         if (window_)
@@ -190,7 +190,7 @@ private:
         else if (page_ == 1)
         {
             for (int i = 0; i < 6; ++i)
-                if (y >= 139 + i * 54 && y < 187 + i * 54)
+                if (y >= 131 + i * 48 && y < 173 + i * 48)
                     return 300 + i;
         }
         else if (page_ == 2)
@@ -265,7 +265,7 @@ private:
         {
             for (int i = 0; i < 6; ++i)
             {
-                const int y = 139 + i * 54;
+                const int y = 131 + i * 48;
                 const unsigned metric = settings_.order[i];
                 const wchar_t* name = L"Unknown";
 
@@ -279,31 +279,31 @@ private:
                 case MetricRam: name = L"RAM"; break;
                 }
 
-                Rounded(dc, {212, y, right, y + 48},
+                Rounded(dc, {212, y, right, y + 42},
                     hoverZone_ == 300 + i ? RGB(37, 40, 45) : Panel);
 
                 const bool enabled = settings_.Has(metric);
-                Rounded(dc, {231, y + 13, 254, y + 36},
+                Rounded(dc, {231, y + 10, 254, y + 33},
                     enabled ? Accent : RGB(68, 73, 81));
 
                 if (enabled)
-                    Checkmark(dc, 236, y + 17);
+                    Checkmark(dc, 236, y + 14);
 
-                Text(dc, name, 275, y + 8, right - 400, medium_,
+                Text(dc, name, 275, y + 5, right - 400, medium_,
                      enabled ? Primary : Secondary);
 
-                Rounded(dc, {right - 100, y + 9, right - 61, y + 39},
+                Rounded(dc, {right - 100, y + 6, right - 61, y + 36},
                     i == 0 ? RGB(32, 34, 38) : RGB(47, 50, 57));
-                Rounded(dc, {right - 52, y + 9, right - 13, y + 39},
+                Rounded(dc, {right - 52, y + 6, right - 13, y + 36},
                     i == 5 ? RGB(32, 34, 38) : RGB(47, 50, 57));
-                Arrow(dc, right - 81, y + 24, true,
+                Arrow(dc, right - 81, y + 21, true,
                       i == 0 ? Secondary : Accent);
-                Arrow(dc, right - 33, y + 24, false,
+                Arrow(dc, right - 33, y + 21, false,
                       i == 5 ? Secondary : Accent);
             }
 
             Text(dc, L"Use arrows to reorder. Click a metric to show or hide it.",
-                 214, 480, right - 230, small_, Secondary);
+                 214, 424, right - 230, small_, Secondary);
         }
         else if (page_ == 2)
         {
@@ -344,8 +344,7 @@ private:
                 Text(dc, L"N/A", right - 95, 352, 70, medium_, Secondary);
             }
 
-            Text(dc, L"Transparent mode keeps text fully opaque.",
-                 214, 448, 530, small_, Secondary);
+
         }
         else if (licenseIndex_ < 0)
         {
@@ -495,8 +494,8 @@ private:
         {
             for (int i = 0; i < 6; ++i)
             {
-                const int y0 = 139 + i * 54;
-                if (y >= y0 && y < y0 + 48)
+                const int y0 = 131 + i * 48;
+                if (y >= y0 && y < y0 + 42)
                 {
                     if (x >= right - 100 && x < right - 61)
                     {
@@ -568,13 +567,6 @@ private:
     {
         switch (msg)
         {
-        case WM_GETMINMAXINFO:
-        {
-            auto limits = reinterpret_cast<MINMAXINFO*>(lp);
-            limits->ptMinTrackSize = {830, 620};
-            return 0;
-        }
-
         case WM_CREATE:
             brand_ = CreateFontW(-19, 0, 0, 0, FW_SEMIBOLD, FALSE,
                 FALSE, FALSE, DEFAULT_CHARSET, 0, 0, CLEARTYPE_QUALITY,
@@ -606,7 +598,27 @@ private:
             HDC dc = BeginPaint(hwnd, &paint);
             RECT rect{};
             GetClientRect(hwnd, &rect);
-            Render(dc, rect);
+
+            const int width = rect.right - rect.left;
+            const int height = rect.bottom - rect.top;
+            HDC buffer = CreateCompatibleDC(dc);
+            HBITMAP bitmap = buffer
+                ? CreateCompatibleBitmap(dc, width, height) : nullptr;
+
+            if (bitmap)
+            {
+                HGDIOBJ oldBitmap = SelectObject(buffer, bitmap);
+                Render(buffer, rect);
+                BitBlt(dc, 0, 0, width, height, buffer, 0, 0, SRCCOPY);
+                SelectObject(buffer, oldBitmap);
+                DeleteObject(bitmap);
+            }
+            else
+                Render(dc, rect);
+
+            if (buffer)
+                DeleteDC(buffer);
+
             EndPaint(hwnd, &paint);
             return 0;
         }
@@ -630,15 +642,19 @@ private:
                 hoverZone_ = zone;
                 InvalidateRect(hwnd, nullptr, FALSE);
             }
-            TRACKMOUSEEVENT track{};
-            track.cbSize = sizeof(track);
-            track.dwFlags = TME_LEAVE;
-            track.hwndTrack = hwnd;
-            TrackMouseEvent(&track);
+            if (!trackingMouse_)
+            {
+                TRACKMOUSEEVENT track{};
+                track.cbSize = sizeof(track);
+                track.dwFlags = TME_LEAVE;
+                track.hwndTrack = hwnd;
+                trackingMouse_ = TrackMouseEvent(&track) != FALSE;
+            }
             return 0;
         }
 
         case WM_MOUSELEAVE:
+            trackingMouse_ = false;
             hoverZone_ = -1;
             InvalidateRect(hwnd, nullptr, FALSE);
             return 0;
@@ -713,4 +729,5 @@ private:
     int page_ = 0;
     int licenseIndex_ = -1;
     int hoverZone_ = -1;
+    bool trackingMouse_ = false;
 };

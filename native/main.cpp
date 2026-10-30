@@ -25,6 +25,116 @@ FpsReader fpsReader;
 HFONT overlayFont = nullptr;
 bool overlayFontTransparent = false;
 
+struct OverlayReadings
+{
+    wchar_t timeText[32]{};
+    wchar_t cpuText[40]{};
+    wchar_t ramText[16]{};
+    wchar_t fpsText[16]{};
+    wchar_t gpuText[40]{};
+    wchar_t vramText[16]{};
+
+    static const wchar_t* Label(unsigned metric)
+    {
+        switch (metric)
+        {
+        case MetricFps: return L"FPS";
+        case MetricTime: return L"Time";
+        case MetricCpu: return L"CPU";
+        case MetricGpu: return L"GPU";
+        case MetricVram: return L"VRAM";
+        case MetricRam: return L"RAM";
+        }
+        return L"";
+    }
+
+    const wchar_t* Value(unsigned metric) const
+    {
+        switch (metric)
+        {
+        case MetricFps: return fpsText;
+        case MetricTime: return timeText;
+        case MetricCpu: return cpuText;
+        case MetricGpu: return gpuText;
+        case MetricVram: return vramText;
+        case MetricRam: return ramText;
+        }
+        return L"";
+    }
+};
+
+#include "transparent_overlay.h"
+
+TransparentOverlayRenderer transparentRenderer;
+
+OverlayReadings CaptureOverlayReadings()
+{
+    OverlayReadings readings{};
+    SYSTEMTIME time;
+    GetLocalTime(&time);
+
+    DWORD foregroundPid = 0;
+    GetWindowThreadProcessId(GetForegroundWindow(), &foregroundPid);
+
+    int fps = fpsReader.GetFps(foregroundPid);
+
+    if (fps >= 0)
+        swprintf_s(readings.fpsText, L"%d", fps);
+    else
+        wcscpy_s(readings.fpsText, L"--");
+
+    if (settings.clock12)
+    {
+        int hour = time.wHour % 12;
+        if (hour == 0) hour = 12;
+
+        swprintf_s(readings.timeText, L"%02d:%02d:%02d %ls",
+                   hour, time.wMinute, time.wSecond,
+                   time.wHour >= 12 ? L"PM" : L"AM");
+    }
+    else
+    {
+        swprintf_s(readings.timeText, L"%02d:%02d:%02d",
+                   time.wHour, time.wMinute, time.wSecond);
+    }
+
+    if (metrics.CpuPercent >= 0 && cpuTemperature.Celsius >= 0 &&
+        metrics.CpuFrequencyMhz >= 0)
+        swprintf_s(readings.cpuText, L"%d%% %d\u00B0C %dMHz",
+            metrics.CpuPercent, cpuTemperature.Celsius, metrics.CpuFrequencyMhz);
+    else if (metrics.CpuPercent >= 0 && cpuTemperature.Celsius >= 0)
+        swprintf_s(readings.cpuText, L"%d%% %d\u00B0C",
+            metrics.CpuPercent, cpuTemperature.Celsius);
+    else if (metrics.CpuPercent >= 0 && metrics.CpuFrequencyMhz >= 0)
+        swprintf_s(readings.cpuText, L"%d%% %dMHz",
+            metrics.CpuPercent, metrics.CpuFrequencyMhz);
+    else if (metrics.CpuPercent >= 0)
+        swprintf_s(readings.cpuText, L"%d%%", metrics.CpuPercent);
+    else
+        wcscpy_s(readings.cpuText, L"--");
+
+    if (metrics.RamPercent >= 0)
+        swprintf_s(readings.ramText, L"%d%%", metrics.RamPercent);
+    else
+        wcscpy_s(readings.ramText, L"--");
+
+    if (gpuMetrics.UsagePercent >= 0 && gpuMetrics.TemperatureC >= 0)
+        swprintf_s(readings.gpuText, L"%d%% %d\u00B0C",
+                   gpuMetrics.UsagePercent, gpuMetrics.TemperatureC);
+    else if (gpuMetrics.UsagePercent >= 0)
+        swprintf_s(readings.gpuText, L"%d%%", gpuMetrics.UsagePercent);
+    else if (gpuMetrics.TemperatureC >= 0)
+        swprintf_s(readings.gpuText, L"%d\u00B0C", gpuMetrics.TemperatureC);
+    else
+        wcscpy_s(readings.gpuText, L"--");
+
+    if (gpuMetrics.VramPercent >= 0)
+        swprintf_s(readings.vramText, L"%d%%", gpuMetrics.VramPercent);
+    else
+        wcscpy_s(readings.vramText, L"--");
+    return readings;
+}
+
 constexpr int ToggleHotkey = 1;
 constexpr int ExitHotkey = 2;
 constexpr int DiagnosticsHotkey = 3;
@@ -34,18 +144,30 @@ constexpr UINT SettingsChanged = WM_APP + 2;
 void ApplyOverlayState(HWND window)
 {
     static int lastOpacity = -1;
-    static bool lastTransparent = false;
+    static bool lastAlphaMode = false;
 
+    const bool alphaMode = settings.transparent && transparentRenderer.Ready();
     const int opacity = settings.transparent ? 100 : settings.opacity;
 
-    if (lastOpacity != opacity || lastTransparent != settings.transparent)
+    if (lastOpacity != opacity || lastAlphaMode != alphaMode)
     {
-        SetLayeredWindowAttributes(
-            window, RGB(24, 25, 28),
-            static_cast<BYTE>(opacity * 255 / 100),
-            settings.transparent ? LWA_COLORKEY : LWA_ALPHA);
+        if (lastOpacity >= 0 && lastAlphaMode != alphaMode)
+        {
+            const LONG_PTR style = GetWindowLongPtrW(window, GWL_EXSTYLE);
+            SetWindowLongPtrW(window, GWL_EXSTYLE, style & ~WS_EX_LAYERED);
+            SetWindowLongPtrW(window, GWL_EXSTYLE, style);
+        }
+
+        if (!alphaMode)
+        {
+            SetLayeredWindowAttributes(
+                window, RGB(24, 25, 28),
+                static_cast<BYTE>(opacity * 255 / 100),
+                settings.transparent ? LWA_COLORKEY : LWA_ALPHA);
+        }
+
         lastOpacity = opacity;
-        lastTransparent = settings.transparent;
+        lastAlphaMode = alphaMode;
     }
 
     DWORD foregroundPid = 0;
@@ -56,10 +178,16 @@ void ApplyOverlayState(HWND window)
          (gameDetector.IsLikelyGame(GetForegroundWindow()) &&
           fpsReader.GetFps(foregroundPid) >= 0));
 
+    if (alphaMode)
+    {
+        if (visible)
+            transparentRenderer.Render(window, settings, CaptureOverlayReadings());
+    }
+    else
+        InvalidateRect(window, nullptr, FALSE);
+
     if (visible != (IsWindowVisible(window) != FALSE))
         ShowWindow(window, visible ? SW_SHOWNOACTIVATE : SW_HIDE);
-
-    InvalidateRect(window, nullptr, FALSE);
 }
 
 void CopyFpsDiagnostics(HWND window)
@@ -115,6 +243,12 @@ LRESULT CALLBACK WindowProc(HWND window, UINT message, WPARAM wp, LPARAM lp)
         PAINTSTRUCT paint;
         HDC dc = BeginPaint(window, &paint);
 
+        if (settings.transparent && transparentRenderer.Ready())
+        {
+            EndPaint(window, &paint);
+            return 0;
+        }
+
         RECT area;
         GetClientRect(window, &area);
 
@@ -122,75 +256,7 @@ LRESULT CALLBACK WindowProc(HWND window, UINT message, WPARAM wp, LPARAM lp)
         FillRect(dc, &area, background);
         DeleteObject(background);
 
-        SYSTEMTIME time;
-        GetLocalTime(&time);
-
-        wchar_t timeText[32];
-        wchar_t cpuText[40];
-        wchar_t ramText[16];
-        wchar_t fpsText[16];
-        wchar_t gpuText[40];
-        wchar_t vramText[16];
-
-        DWORD foregroundPid = 0;
-        GetWindowThreadProcessId(GetForegroundWindow(), &foregroundPid);
-
-        int fps = fpsReader.GetFps(foregroundPid);
-
-        if (fps >= 0)
-            swprintf_s(fpsText, L"%d", fps);
-        else
-            wcscpy_s(fpsText, L"--");
-
-        if (settings.clock12)
-        {
-            int hour = time.wHour % 12;
-            if (hour == 0) hour = 12;
-
-            swprintf_s(timeText, L"%02d:%02d:%02d %ls",
-                       hour, time.wMinute, time.wSecond,
-                       time.wHour >= 12 ? L"PM" : L"AM");
-        }
-        else
-        {
-            swprintf_s(timeText, L"%02d:%02d:%02d",
-                       time.wHour, time.wMinute, time.wSecond);
-        }
-
-        if (metrics.CpuPercent >= 0 && cpuTemperature.Celsius >= 0 &&
-            metrics.CpuFrequencyMhz >= 0)
-            swprintf_s(cpuText, L"%d%% %d\u00B0C %dMHz",
-                metrics.CpuPercent, cpuTemperature.Celsius, metrics.CpuFrequencyMhz);
-        else if (metrics.CpuPercent >= 0 && cpuTemperature.Celsius >= 0)
-            swprintf_s(cpuText, L"%d%% %d\u00B0C",
-                metrics.CpuPercent, cpuTemperature.Celsius);
-        else if (metrics.CpuPercent >= 0 && metrics.CpuFrequencyMhz >= 0)
-            swprintf_s(cpuText, L"%d%% %dMHz",
-                metrics.CpuPercent, metrics.CpuFrequencyMhz);
-        else if (metrics.CpuPercent >= 0)
-            swprintf_s(cpuText, L"%d%%", metrics.CpuPercent);
-        else
-            wcscpy_s(cpuText, L"--");
-
-        if (metrics.RamPercent >= 0)
-            swprintf_s(ramText, L"%d%%", metrics.RamPercent);
-        else
-            wcscpy_s(ramText, L"--");
-
-        if (gpuMetrics.UsagePercent >= 0 && gpuMetrics.TemperatureC >= 0)
-            swprintf_s(gpuText, L"%d%% %d\u00B0C",
-                       gpuMetrics.UsagePercent, gpuMetrics.TemperatureC);
-        else if (gpuMetrics.UsagePercent >= 0)
-            swprintf_s(gpuText, L"%d%%", gpuMetrics.UsagePercent);
-        else if (gpuMetrics.TemperatureC >= 0)
-            swprintf_s(gpuText, L"%d\u00B0C", gpuMetrics.TemperatureC);
-        else
-            wcscpy_s(gpuText, L"--");
-
-        if (gpuMetrics.VramPercent >= 0)
-            swprintf_s(vramText, L"%d%%", gpuMetrics.VramPercent);
-        else
-            wcscpy_s(vramText, L"--");
+        const auto readings = CaptureOverlayReadings();
 
         if (!overlayFont || overlayFontTransparent != settings.transparent)
         {
@@ -238,18 +304,9 @@ LRESULT CALLBACK WindowProc(HWND window, UINT message, WPARAM wp, LPARAM lp)
 
         for (unsigned metric : settings.order)
         {
-            if (!settings.Has(metric))
-                continue;
-
-            switch (metric)
-            {
-            case MetricFps: DrawMetric(L"FPS", fpsText); break;
-            case MetricTime: DrawMetric(L"Time", timeText); break;
-            case MetricCpu: DrawMetric(L"CPU", cpuText); break;
-            case MetricGpu: DrawMetric(L"GPU", gpuText); break;
-            case MetricVram: DrawMetric(L"VRAM", vramText); break;
-            case MetricRam: DrawMetric(L"RAM", ramText); break;
-            }
+            if (settings.Has(metric))
+                DrawMetric(OverlayReadings::Label(metric),
+                           readings.Value(metric));
         }
 
         const int requiredWidth = x == 10 ? 160 : x - 16 + 10;
@@ -385,6 +442,7 @@ LRESULT CALLBACK WindowProc(HWND window, UINT message, WPARAM wp, LPARAM lp)
 int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int)
 {
     settings.Load();
+    transparentRenderer.Start();
 
     WNDCLASSW cls{};
     cls.lpfnWndProc = WindowProc;
@@ -449,5 +507,6 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int)
     fpsReader.Stop();
     gpuMetrics.Shutdown();
     cpuTemperature.Shutdown();
+    transparentRenderer.Stop();
     return 0;
 }
