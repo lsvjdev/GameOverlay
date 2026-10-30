@@ -189,6 +189,27 @@ private:
         }
     }
 
+    void ExternalLinkIcon(HDC dc, int x, int y)
+    {
+        HPEN pen = CreatePen(PS_SOLID, 2, Accent);
+        auto previous = SelectObject(dc, pen);
+
+        MoveToEx(dc, x + 12, y + 7, nullptr);
+        LineTo(dc, x + 12, y + 16);
+        LineTo(dc, x + 2, y + 16);
+        LineTo(dc, x + 2, y + 6);
+        LineTo(dc, x + 7, y + 6);
+
+        MoveToEx(dc, x + 8, y + 10, nullptr);
+        LineTo(dc, x + 16, y + 2);
+        MoveToEx(dc, x + 10, y + 2, nullptr);
+        LineTo(dc, x + 16, y + 2);
+        LineTo(dc, x + 16, y + 8);
+
+        SelectObject(dc, previous);
+        DeleteObject(pen);
+    }
+
     void DetailIcon(HDC dc, int x, int y, COLORREF color)
     {
         // Three understated adjustment rails: recognizable without
@@ -390,7 +411,7 @@ private:
         else if (page_ == 3)
         {
             for (int i = 0; i < 4; ++i)
-                if (y >= 242 + i * 62 && y < 297 + i * 62)
+                if (y >= 230 + i * 62 && y < 285 + i * 62)
                     return 500 + i;
         }
         return -1;
@@ -578,14 +599,14 @@ private:
         }
         else
         {
-            Rounded(dc, {212, 131, right, 229}, Panel);
-            Text(dc, L"Game Overlay", 231, 137, 330, heading_, Primary);
+            Rounded(dc, {212, 119, right, 217}, Panel);
+            Text(dc, L"Game Overlay", 231, 125, 330, heading_, Primary);
             Text(dc, L"Native Windows monitor  |  GPL-3.0-only  |  lsvjdev",
-                 231, 171, right - 255, small_, Secondary);
+                 231, 159, right - 255, small_, Secondary);
             const std::wstring version = std::wstring(L"Version: ") + GAMEOVERLAY_VERSION;
             const std::wstring revision = std::wstring(L"Revision: ") + GAMEOVERLAY_REVISION;
-            Text(dc, version.c_str(), 231, 195, 315, small_, Accent);
-            Text(dc, revision.c_str(), right - 205, 195, 185, small_, Secondary);
+            Text(dc, version.c_str(), 231, 183, 315, small_, Accent);
+            Text(dc, revision.c_str(), right - 205, 183, 185, small_, Secondary);
 
             const wchar_t* labels[] = {
                 L"GitHub repository", L"Official website",
@@ -598,29 +619,13 @@ private:
             };
             for (int i = 0; i < 4; ++i)
             {
-                const int y = 242 + i * 62;
+                const int y = 230 + i * 62;
                 Rounded(dc, {212, y, right, y + 55},
                     hoverZone_ == 500 + i ? RGB(37, 40, 45) : Panel);
                 Text(dc, labels[i], 231, y + 1, 360, medium_, Primary);
                 Text(dc, notes[i], 231, y + 26, right - 340,
                      small_, Secondary);
-                // Minimal external-link glyph, rather than repeated "OPEN >".
-                const int bx = right - 42;
-                const int by = y + 20;
-                HPEN linkPen = CreatePen(PS_SOLID, 2, Accent);
-                auto oldPen = SelectObject(dc, linkPen);
-                MoveToEx(dc, bx + 9, by + 3, nullptr);
-                LineTo(dc, bx + 9, by + 12);
-                LineTo(dc, bx - 2, by + 12);
-                LineTo(dc, bx - 2, by + 3);
-                LineTo(dc, bx + 2, by + 3);
-                MoveToEx(dc, bx + 4, by + 1, nullptr);
-                LineTo(dc, bx + 12, by - 5);
-                MoveToEx(dc, bx + 6, by - 5, nullptr);
-                LineTo(dc, bx + 12, by - 5);
-                LineTo(dc, bx + 12, by + 1);
-                SelectObject(dc, oldPen);
-                DeleteObject(linkPen);
+                ExternalLinkIcon(dc, right - 47, y + 18);
             }
         }
 
@@ -734,19 +739,19 @@ private:
         }
         else if (page_ == 3)
         {
-            if (y >= 242 && y < 297)
+            if (y >= 230 && y < 285)
                 ShellExecuteW(window_, L"open",
                     L"https://github.com/lsvjdev/GameOverlay",
                     nullptr, nullptr, SW_SHOWNORMAL);
-            else if (y >= 304 && y < 359)
+            else if (y >= 292 && y < 347)
                 ShellExecuteW(window_, L"open",
                     L"https://lsvjdev.github.io/GameOverlay/",
                     nullptr, nullptr, SW_SHOWNORMAL);
-            else if (y >= 366 && y < 421)
+            else if (y >= 354 && y < 409)
                 ShellExecuteW(window_, L"open",
                     L"https://github.com/lsvjdev/GameOverlay/issues/new/choose",
                     nullptr, nullptr, SW_SHOWNORMAL);
-            else if (y >= 428 && y < 483)
+            else if (y >= 416 && y < 471)
                 OpenLocalLicenses();
         }
     }
