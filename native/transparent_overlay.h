@@ -46,12 +46,13 @@ public:
         Gdiplus::Font bold(&family, 14.0f,
             Gdiplus::FontStyleBold, Gdiplus::UnitPixel);
         Gdiplus::SolidBrush labelBrush(settings.transparent
-            ? Gdiplus::Color(255, 232, 234, 237)
+            ? Gdiplus::Color(255, 247, 248, 250)
             : Gdiplus::Color(255, 189, 181, 188));
         Gdiplus::SolidBrush valueBrush(settings.transparent
             ? Gdiplus::Color(255, 255, 255, 255)
             : Gdiplus::Color(255, 82, 217, 85));
-        Gdiplus::SolidBrush separatorBrush(Gdiplus::Color(230, 168, 177, 184));
+        Gdiplus::SolidBrush separatorBrush(Gdiplus::Color(255, 210, 214, 219));
+        Gdiplus::SolidBrush shadowBrush(Gdiplus::Color(170, 0, 0, 0));
 
         Gdiplus::StringFormat format;
         format.SetFormatFlags(Gdiplus::StringFormatFlagsNoWrap |
@@ -198,11 +199,22 @@ public:
             {
                 const Part& part = parts[i];
                 if (part.separator)
+                {
+                    if (settings.transparent)
+                        painter.FillRectangle(&shadowBrush,
+                            static_cast<int>(part.x) + 1, 7, 1, 13);
                     painter.FillRectangle(&separatorBrush,
                         static_cast<int>(part.x), 7, 1, 13);
+                }
                 else
+                {
+                    if (settings.transparent)
+                        painter.DrawString(part.text, -1, part.font,
+                            Gdiplus::PointF(part.x + 1.0f, 5.0f),
+                            &format, &shadowBrush);
                     painter.DrawString(part.text, -1, part.font,
                         Gdiplus::PointF(part.x, 4.0f), &format, part.brush);
+                }
             }
             painter.Flush();
         }
