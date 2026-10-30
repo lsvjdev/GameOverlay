@@ -23,6 +23,15 @@
     minecraft: "Minecraft gameplay screenshot"
   };
 
+  function fitOverlay() {
+    // Keep the simulated strip on one line, even on narrow phone screens.
+    const available = Math.max(0, screen.clientWidth - 12);
+    const naturalWidth = hud.scrollWidth;
+    const scale = naturalWidth > available && naturalWidth > 0
+      ? available / naturalWidth : 1;
+    hud.style.setProperty("--hud-scale", String(Math.min(1, scale)));
+  }
+
   function drawOverlay() {
     hud.replaceChildren();
     source.filter(metric => metric.enabled).forEach(metric => {
@@ -39,6 +48,7 @@
     });
     hud.setAttribute("aria-label", source.filter(metric => metric.enabled)
       .map(metric => metric.id + " " + metric.value).join(", ") + " (simulated)");
+    fitOverlay();
   }
 
   function drawControls() {
@@ -104,6 +114,7 @@
       opacityHint.textContent = disabled
         ? "Transparent text always stays fully opaque."
         : "Text stays opaque. Adjust the background only.";
+      fitOverlay();
     });
   });
 
@@ -124,4 +135,9 @@
 
   drawControls();
   drawOverlay();
+  if ("ResizeObserver" in window) {
+    new ResizeObserver(fitOverlay).observe(screen);
+  } else {
+    window.addEventListener("resize", fitOverlay);
+  }
 })();
