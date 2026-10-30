@@ -6,6 +6,8 @@
 #include <cstdio>
 #include <cwchar>
 #include <cstring>
+#include <array>
+#include <string>
 #include <shellapi.h>
 #include "settings_config.h"
 #include "settings_window.h"
@@ -27,12 +29,47 @@ bool overlayFontTransparent = false;
 
 struct OverlayReadings
 {
-    wchar_t timeText[32]{};
-    wchar_t cpuText[40]{};
-    wchar_t ramText[16]{};
-    wchar_t fpsText[16]{};
-    wchar_t gpuText[40]{};
-    wchar_t vramText[16]{};
+    struct Part
+    {
+        std::wstring value;
+        std::wstring reserve;
+    };
+    struct MetricValue
+    {
+        std::array<Part, 3> parts{};
+        int count = 0;
+    };
+    std::array<MetricValue, 6> values{};
+
+    void Add(unsigned metric, const std::wstring& value,
+             const std::wstring& reserve)
+    {
+        const int index = AppSettings::MetricIndex(metric);
+        if (index < 0)
+            return;
+        auto& entry = values[index];
+        if (entry.count < static_cast<int>(entry.parts.size()))
+            entry.parts[entry.count++] = {value, reserve};
+    }
+
+    const MetricValue& Get(unsigned metric) const
+    {
+        const int index = AppSettings::MetricIndex(metric);
+        return values[index >= 0 ? index : 0];
+    }
+
+    // Used only if GDI+ initialization fails.
+    std::wstring Value(unsigned metric) const
+    {
+        std::wstring result;
+        const auto& entry = Get(metric);
+        for (int i = 0; i < entry.count; ++i)
+        {
+            if (i) result += L" ";
+            result += entry.parts[i].value;
+        }
+        return result.empty() ? L"--" : result;
+    }
 
     static const wchar_t* Label(unsigned metric)
     {
@@ -47,20 +84,6 @@ struct OverlayReadings
         }
         return L"";
     }
-
-    const wchar_t* Value(unsigned metric) const
-    {
-        switch (metric)
-        {
-        case MetricFps: return fpsText;
-        case MetricTime: return timeText;
-        case MetricCpu: return cpuText;
-        case MetricGpu: return gpuText;
-        case MetricVram: return vramText;
-        case MetricRam: return ramText;
-        }
-        return L"";
-    }
 };
 
 #include "transparent_overlay.h"
@@ -70,68 +93,70 @@ TransparentOverlayRenderer transparentRenderer;
 OverlayReadings CaptureOverlayReadings()
 {
     OverlayReadings readings{};
-    SYSTEMTIME time;
+    SYSTEMTIME time{};
     GetLocalTime(&time);
 
     DWORD foregroundPid = 0;
     GetWindowThreadProcessId(GetForegroundWindow(), &foregroundPid);
+    const int fps = fpsReader.GetFps(foregroundPid);
 
-    int fps = fpsReader.GetFps(foregroundPid);
+    readings.Add(MetricFps,
+        fps >= 0 ? std::to_wstring(fps) : L"--", L"88888");
 
-    if (fps >= 0)
-        swprintf_s(readings.fpsText, L"%d", fps);
-    else
-        wcscpy_s(readings.fpsText, L"--");
-
+    wchar_t buffer[128]{};
     if (settings.clock12)
     {
         int hour = time.wHour % 12;
         if (hour == 0) hour = 12;
-
-        swprintf_s(readings.timeText, L"%02d:%02d:%02d %ls",
-                   hour, time.wMinute, time.wSecond,
-                   time.wHour >= 12 ? L"PM" : L"AM");
+        swprintf_s(buffer, L"%02d:%02d:%02d %ls",
+            hour, time.wMinute, time.wSecond, time.wHour >= 12 ? L"PM" : L"AM");
+        readings.Add(MetricTime, buffer, L"88:88:88 PM");
     }
     else
     {
-        swprintf_s(readings.timeText, L"%02d:%02d:%02d",
-                   time.wHour, time.wMinute, time.wSecond);
+        swprintf_s(buffer, L"%02d:%02d:%02d",
+            time.wHour, time.wMinute, time.wSecond);
+        readings.Add(MetricTime, buffer, L"88:88:88");
     }
 
-    if (metrics.CpuPercent >= 0 && cpuTemperature.Celsius >= 0 &&
-        metrics.CpuFrequencyMhz >= 0)
-        swprintf_s(readings.cpuText, L"%d%% %d\u00B0C %dMHz",
-            metrics.CpuPercent, cpuTemperature.Celsius, metrics.CpuFrequencyMhz);
-    else if (metrics.CpuPercent >= 0 && cpuTemperature.Celsius >= 0)
-        swprintf_s(readings.cpuText, L"%d%% %d\u00B0C",
-            metrics.CpuPercent, cpuTemperature.Celsius);
-    else if (metrics.CpuPercent >= 0 && metrics.CpuFrequencyMhz >= 0)
-        swprintf_s(readings.cpuText, L"%d%% %dMHz",
-            metrics.CpuPercent, metrics.CpuFrequencyMhz);
-    else if (metrics.CpuPercent >= 0)
-        swprintf_s(readings.cpuText, L"%d%%", metrics.CpuPercent);
-    else
-        wcscpy_s(readings.cpuText, L"--");
+    auto addInteger = [&](unsigned metric, unsigned bit,
+                          int value, const wchar_t* suffix,
+                          const wchar_t* reserve)
+    {
+        if (!settings.HasDetail(metric, bit))
+            return;
+        std::wstring output = value >= 0 ? std::to_wstring(value) : L"--";
+        if (value >= 0)
+            output += suffix;
+        readings.Add(metric, output, reserve);
+    };
 
-    if (metrics.RamPercent >= 0)
-        swprintf_s(readings.ramText, L"%d%%", metrics.RamPercent);
-    else
-        wcscpy_s(readings.ramText, L"--");
+    addInteger(MetricCpu, 1, metrics.CpuPercent, L"%", L"888%");
+    addInteger(MetricCpu, 2, cpuTemperature.Celsius, L"\u00B0C", L"888\u00B0C");
+    addInteger(MetricCpu, 4, metrics.CpuFrequencyMhz, L"MHz", L"88888MHz");
+    addInteger(MetricGpu, 1, gpuMetrics.UsagePercent, L"%", L"888%");
+    addInteger(MetricGpu, 2, gpuMetrics.TemperatureC, L"\u00B0C", L"888\u00B0C");
+    addInteger(MetricVram, 1, gpuMetrics.VramPercent, L"%", L"888%");
+    addInteger(MetricRam, 1, metrics.RamPercent, L"%", L"888%");
 
-    if (gpuMetrics.UsagePercent >= 0 && gpuMetrics.TemperatureC >= 0)
-        swprintf_s(readings.gpuText, L"%d%% %d\u00B0C",
-                   gpuMetrics.UsagePercent, gpuMetrics.TemperatureC);
-    else if (gpuMetrics.UsagePercent >= 0)
-        swprintf_s(readings.gpuText, L"%d%%", gpuMetrics.UsagePercent);
-    else if (gpuMetrics.TemperatureC >= 0)
-        swprintf_s(readings.gpuText, L"%d\u00B0C", gpuMetrics.TemperatureC);
-    else
-        wcscpy_s(readings.gpuText, L"--");
+    auto addMemory = [&](unsigned metric, std::uint64_t used,
+                         std::uint64_t total)
+    {
+        if (!settings.HasDetail(metric, 2))
+            return;
+        if (!total)
+        {
+            readings.Add(metric, L"--", L"888.8/888.8GB");
+            return;
+        }
+        swprintf_s(buffer, L"%.1f/%.1fGB",
+            static_cast<double>(used) / 1024.0,
+            static_cast<double>(total) / 1024.0);
+        readings.Add(metric, buffer, L"888.8/888.8GB");
+    };
 
-    if (gpuMetrics.VramPercent >= 0)
-        swprintf_s(readings.vramText, L"%d%%", gpuMetrics.VramPercent);
-    else
-        wcscpy_s(readings.vramText, L"--");
+    addMemory(MetricVram, gpuMetrics.UsedVramMiB(), gpuMetrics.TotalVramMiB());
+    addMemory(MetricRam, metrics.RamUsedMiB, metrics.RamTotalMiB);
     return readings;
 }
 
@@ -146,7 +171,7 @@ void ApplyOverlayState(HWND window)
     static int lastOpacity = -1;
     static bool lastAlphaMode = false;
 
-    const bool alphaMode = settings.transparent && transparentRenderer.Ready();
+    const bool alphaMode = transparentRenderer.Ready();
     const int opacity = settings.transparent ? 100 : settings.opacity;
 
     if (lastOpacity != opacity || lastAlphaMode != alphaMode)
@@ -243,7 +268,7 @@ LRESULT CALLBACK WindowProc(HWND window, UINT message, WPARAM wp, LPARAM lp)
         PAINTSTRUCT paint;
         HDC dc = BeginPaint(window, &paint);
 
-        if (settings.transparent && transparentRenderer.Ready())
+        if (transparentRenderer.Ready())
         {
             EndPaint(window, &paint);
             return 0;
@@ -305,8 +330,10 @@ LRESULT CALLBACK WindowProc(HWND window, UINT message, WPARAM wp, LPARAM lp)
         for (unsigned metric : settings.order)
         {
             if (settings.Has(metric))
-                DrawMetric(OverlayReadings::Label(metric),
-                           readings.Value(metric));
+            {
+                const std::wstring value = readings.Value(metric);
+                DrawMetric(OverlayReadings::Label(metric), value.c_str());
+            }
         }
 
         const int requiredWidth = x == 10 ? 160 : x - 16 + 10;

@@ -14,6 +14,8 @@ struct SystemMetrics
     int CpuPercent = -1;
     int CpuFrequencyMhz = -1;
     int RamPercent = -1;
+    std::uint64_t RamUsedMiB = 0;
+    std::uint64_t RamTotalMiB = 0;
 
     ~SystemMetrics()
     {
@@ -26,9 +28,12 @@ struct SystemMetrics
         MEMORYSTATUSEX memory{};
         memory.dwLength = sizeof(memory);
 
-        RamPercent = GlobalMemoryStatusEx(&memory)
-            ? static_cast<int>(memory.dwMemoryLoad)
-            : -1;
+        const bool memoryAvailable = GlobalMemoryStatusEx(&memory) != FALSE;
+        RamPercent = memoryAvailable ? static_cast<int>(memory.dwMemoryLoad) : -1;
+        RamUsedMiB = memoryAvailable
+            ? (memory.ullTotalPhys - memory.ullAvailPhys) / (1024 * 1024) : 0;
+        RamTotalMiB = memoryAvailable
+            ? memory.ullTotalPhys / (1024 * 1024) : 0;
 
         RefreshFrequency();
 

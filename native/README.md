@@ -54,8 +54,19 @@ Settings can be resized and edited without restarting the overlay. The
 the metrics. The order and selection are saved between launches.
 
 **Appearance** offers six screen positions and dark-strip or transparent
-text display. Opacity changes in 1% increments in dark-strip mode only.
-The transparent style uses fully opaque text and does not apply opacity.
+text display. A 0-100% slider controls the dark-strip **background** opacity
+without fading the text. Click the percentage to enter a precise value.
+
+**Metrics** includes per-reading controls for CPU usage/temperature/frequency,
+GPU usage/temperature, and RAM/VRAM percentage or used/total GB. Open a
+metric's details by clicking its row; its checkbox still controls overall
+visibility. The overlay reserves stable space for values so that changing
+digit counts does not move neighboring readings.
+
+**About** shows the build version and Git revision, source/website/issue
+links, and opens the offline license folder shipped in the portable ZIP.
+AppVeyor embeds the build version; local builds show a local-development
+label. No update check or network call is made by the About page.
 
 **Only while gaming** currently uses an FPS signal and excludes known
 desktop applications, including Spotify, browsers and chat clients.

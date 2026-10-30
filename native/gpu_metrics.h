@@ -14,6 +14,9 @@ public:
     int TemperatureC = -1;
     int VramPercent = -1;
 
+    std::uint64_t UsedVramMiB() const { return usedVramMiB_; }
+    std::uint64_t TotalVramMiB() const { return totalVramMiB_; }
+
     ~GpuMetrics()
     {
         Shutdown();

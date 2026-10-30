@@ -5,6 +5,7 @@
 #include <gdiplus.h>
 #include <array>
 #include <cmath>
+#include <algorithm>
 
 class TransparentOverlayRenderer
 {
@@ -44,8 +45,12 @@ public:
             Gdiplus::FontStyleRegular, Gdiplus::UnitPixel);
         Gdiplus::Font bold(&family, 14.0f,
             Gdiplus::FontStyleBold, Gdiplus::UnitPixel);
-        Gdiplus::SolidBrush labelBrush(Gdiplus::Color(255, 232, 234, 237));
-        Gdiplus::SolidBrush valueBrush(Gdiplus::Color(255, 255, 255, 255));
+        Gdiplus::SolidBrush labelBrush(settings.transparent
+            ? Gdiplus::Color(255, 232, 234, 237)
+            : Gdiplus::Color(255, 189, 181, 188));
+        Gdiplus::SolidBrush valueBrush(settings.transparent
+            ? Gdiplus::Color(255, 255, 255, 255)
+            : Gdiplus::Color(255, 82, 217, 85));
         Gdiplus::SolidBrush separatorBrush(Gdiplus::Color(230, 168, 177, 184));
 
         Gdiplus::StringFormat format;
@@ -63,21 +68,28 @@ public:
             float x = 0;
         };
 
-        std::array<Part, 17> parts{};
+        std::array<Part, 32> parts{};
         int count = 0;
         float x = 7.0f;
 
-        auto append = [&](const wchar_t* text, Gdiplus::Font* font,
-                          Gdiplus::SolidBrush* brush)
+        auto measureWidth = [&](const wchar_t* text, Gdiplus::Font* font)
         {
-            if (count >= static_cast<int>(parts.size()))
-                return;
-
-            parts[count++] = {text, font, brush, x};
             Gdiplus::RectF bounds;
             measuring.MeasureString(text, -1, font,
                 Gdiplus::PointF(0.0f, 0.0f), &format, &bounds);
-            x += bounds.Width;
+            return bounds.Width;
+        };
+
+        auto append = [&](const wchar_t* text, const wchar_t* reserve,
+                          Gdiplus::Font* font, Gdiplus::SolidBrush* brush)
+        {
+            if (count >= static_cast<int>(parts.size()))
+                return;
+            parts[count++] = {text, font, brush, x};
+            // Reserve a stable width for each individual reading. Digit
+            // changes should not move neighboring readings or the strip.
+            x += (std::max)(measureWidth(text, font),
+                            measureWidth(reserve, font));
         };
 
         for (unsigned metric : settings.order)
@@ -87,14 +99,27 @@ public:
 
             if (count)
             {
-                x += 9.0f;
-                append(L"|", &regular, &separatorBrush);
-                x += 9.0f;
+                if (settings.transparent)
+                {
+                    x += 9.0f;
+                    append(L"|", L"|", &regular, &separatorBrush);
+                    x += 9.0f;
+                }
+                else
+                    x += 16.0f;
             }
 
-            append(OverlayReadings::Label(metric), &regular, &labelBrush);
-            x += 4.0f;
-            append(readings.Value(metric), &bold, &valueBrush);
+            const auto label = OverlayReadings::Label(metric);
+            append(label, label, &regular, &labelBrush);
+
+            const auto& value = readings.Get(metric);
+            for (int i = 0; i < value.count; ++i)
+            {
+                x += i == 0 ? 4.0f : 5.0f;
+                const auto& part = value.parts[i];
+                append(part.value.c_str(), part.reserve.c_str(),
+                    &bold, &valueBrush);
+            }
         }
 
         const int screenWidth = GetSystemMetrics(SM_CXSCREEN);
@@ -102,7 +127,7 @@ public:
         if (screenWidth <= 0 || screenHeight <= 0)
             return false;
 
-        constexpr int height = 27;
+        const int height = settings.transparent ? 27 : 28;
         const int contentWidth = count ? static_cast<int>(std::ceil(x)) + 8 : 100;
         const int width = contentWidth > screenWidth
             ? screenWidth : contentWidth;
@@ -149,6 +174,13 @@ public:
                 PixelFormat32bppPARGB, static_cast<BYTE*>(pixels));
             Gdiplus::Graphics painter(&surface);
             painter.Clear(Gdiplus::Color(0, 0, 0, 0));
+            if (!settings.transparent)
+            {
+                const int percentage = (std::max)(0, (std::min)(100, settings.opacity));
+                Gdiplus::SolidBrush background(Gdiplus::Color(
+                    static_cast<BYTE>(percentage * 255 / 100), 24, 25, 28));
+                painter.FillRectangle(&background, 0, 0, width, height);
+            }
             painter.SetTextRenderingHint(Gdiplus::TextRenderingHintAntiAliasGridFit);
 
             for (int i = 0; i < count; ++i)
