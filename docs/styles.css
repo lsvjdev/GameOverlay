@@ -183,7 +183,8 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--acid); outline-
 .footer-grid { display: flex; gap: 25px; justify-content: space-between; flex-wrap: wrap; align-items: center; }
 .site-footer a { color: #e1ebdc; text-decoration: none; }
 .site-footer a:hover { color: var(--acid); }
-.footer-links { display: flex; flex-wrap: wrap; gap: 25px; }
+.footer-links { display: flex; flex-wrap: wrap; align-items: center; gap: 25px; padding-top: 7px; }
+.footer-links a { display: inline-flex; align-items: center; line-height: 1.4; white-space: nowrap; }
 .footer-note { margin-top: 28px; color: #677a65; font-size: 11px; }
 .internal-hero { padding: 93px 0 66px; border-bottom: 1px solid #343c34; }
 .internal-hero h1 { font-size: clamp(64px, 9vw, 120px); line-height: .98; letter-spacing: -.085em; font-weight: 660; margin: 16px 0 23px; }
