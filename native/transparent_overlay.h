@@ -46,17 +46,19 @@ public:
         Gdiplus::Font bold(&family, 14.0f,
             Gdiplus::FontStyleBold, Gdiplus::UnitPixel);
         Gdiplus::SolidBrush labelBrush(settings.transparent
-            ? Gdiplus::Color(255, 247, 248, 250)
+            ? Gdiplus::Color(255, 221, 225, 230)
             : Gdiplus::Color(255, 189, 181, 188));
         Gdiplus::SolidBrush valueBrush(settings.transparent
             ? Gdiplus::Color(255, 255, 255, 255)
             : Gdiplus::Color(255, 82, 217, 85));
         Gdiplus::SolidBrush separatorBrush(Gdiplus::Color(255, 210, 214, 219));
-        Gdiplus::SolidBrush shadowBrush(Gdiplus::Color(170, 0, 0, 0));
+        Gdiplus::SolidBrush shadowBrush(Gdiplus::Color(120, 0, 0, 0));
 
-        Gdiplus::StringFormat format;
-        format.SetFormatFlags(Gdiplus::StringFormatFlagsNoWrap |
-                              Gdiplus::StringFormatFlagsMeasureTrailingSpaces);
+        Gdiplus::StringFormat defaultFormat;
+        defaultFormat.SetFormatFlags(Gdiplus::StringFormatFlagsNoWrap |
+                                     Gdiplus::StringFormatFlagsMeasureTrailingSpaces);
+        const Gdiplus::StringFormat* format = settings.transparent
+            ? Gdiplus::StringFormat::GenericTypographic() : &defaultFormat;
 
         Gdiplus::Bitmap measuringSurface(1, 1, PixelFormat32bppPARGB);
         Gdiplus::Graphics measuring(&measuringSurface);
@@ -72,13 +74,13 @@ public:
 
         std::array<Part, 32> parts{};
         int count = 0;
-        float x = 7.0f;
+        float x = settings.transparent ? 5.0f : 7.0f;
 
         auto measureWidth = [&](const wchar_t* text, Gdiplus::Font* font)
         {
             Gdiplus::RectF bounds;
             measuring.MeasureString(text, -1, font,
-                Gdiplus::PointF(0.0f, 0.0f), &format, &bounds);
+                Gdiplus::PointF(0.0f, 0.0f), format, &bounds);
             return bounds.Width;
         };
 
@@ -113,9 +115,9 @@ public:
             {
                 if (settings.transparent)
                 {
-                    x += 9.0f;
+                    x += 5.0f;
                     appendSeparator();
-                    x += 9.0f;
+                    x += 5.0f;
                 }
                 else
                     x += 16.0f;
@@ -127,7 +129,7 @@ public:
             const auto& value = readings.Get(metric);
             for (int i = 0; i < value.count; ++i)
             {
-                x += i == 0 ? 4.0f : 5.0f;
+                x += settings.transparent ? 3.0f : (i == 0 ? 4.0f : 5.0f);
                 const auto& part = value.parts[i];
                 append(part.value.c_str(), part.reserve.c_str(),
                     &bold, &valueBrush);
@@ -140,7 +142,8 @@ public:
             return false;
 
         const int height = settings.transparent ? 27 : 28;
-        const int contentWidth = count ? static_cast<int>(std::ceil(x)) + 8 : 100;
+        const int contentWidth = count ? static_cast<int>(std::ceil(x)) +
+            (settings.transparent ? 6 : 8) : 100;
         const int width = contentWidth > screenWidth
             ? screenWidth : contentWidth;
 
@@ -211,9 +214,9 @@ public:
                     if (settings.transparent)
                         painter.DrawString(part.text, -1, part.font,
                             Gdiplus::PointF(part.x + 1.0f, 5.0f),
-                            &format, &shadowBrush);
+                            format, &shadowBrush);
                     painter.DrawString(part.text, -1, part.font,
-                        Gdiplus::PointF(part.x, 4.0f), &format, part.brush);
+                        Gdiplus::PointF(part.x, 4.0f), format, part.brush);
                 }
             }
             painter.Flush();

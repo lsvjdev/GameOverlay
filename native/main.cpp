@@ -101,7 +101,7 @@ OverlayReadings CaptureOverlayReadings()
     const int fps = fpsReader.GetFps(foregroundPid);
 
     readings.Add(MetricFps,
-        fps >= 0 ? std::to_wstring(fps) : L"--", L"88888");
+        fps >= 0 ? std::to_wstring(fps) : L"--", L"999");
 
     wchar_t buffer[128]{};
     if (settings.clock12)
@@ -133,7 +133,7 @@ OverlayReadings CaptureOverlayReadings()
 
     addInteger(MetricCpu, 1, metrics.CpuPercent, L"%", L"888%");
     addInteger(MetricCpu, 2, cpuTemperature.Celsius, L"\u00B0C", L"888\u00B0C");
-    addInteger(MetricCpu, 4, metrics.CpuFrequencyMhz, L"MHz", L"88888MHz");
+    addInteger(MetricCpu, 4, metrics.CpuFrequencyMhz, L"MHz", L"8888MHz");
     addInteger(MetricGpu, 1, gpuMetrics.UsagePercent, L"%", L"888%");
     addInteger(MetricGpu, 2, gpuMetrics.TemperatureC, L"\u00B0C", L"888\u00B0C");
     addInteger(MetricVram, 1, gpuMetrics.VramPercent, L"%", L"888%");
